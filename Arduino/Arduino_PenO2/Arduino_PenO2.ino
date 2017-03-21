@@ -1,3 +1,5 @@
+#define DVD
+
 #include "IRLib.h"
 #include "Commands.h"
 #include "drive.hpp"
@@ -20,7 +22,7 @@ unsigned int Buffer[RAWBUF];
 void setup()
 {
   Serial.begin(9600);
-  delay(2000); while (!Serial); //delay for Leonardo
+  delay(20); while (!Serial); //delay for Leonardo
   My_Receiver.enableIRIn(); // Start the receiver
   My_Decoder.UseExtnBuf(Buffer);
 }
