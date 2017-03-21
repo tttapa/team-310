@@ -12,7 +12,9 @@ const uint8_t SPEED_R = 6;
 const uint8_t DIRECTION_L = 7;
 const uint8_t DIRECTION_R = 8;
 
-Drive drive(DIRECTION_L, DIRECTION_R, SPEED_L, SPEED_R);
+const uint8_t BUZZER = A3;
+
+Drive drive(DIRECTION_L, DIRECTION_R, SPEED_L, SPEED_R, BUZZER);
 
 IRrecv My_Receiver(IR_REMOTE);
 
@@ -32,9 +34,10 @@ void loop() {
     My_Receiver.resume();
     My_Decoder.decode();
     Serial.println(My_Decoder.value, HEX);
+    drive.checkIR(My_Decoder.value);
+    My_Decoder.value = 0;
   }
-  drive.checkIR(My_Decoder.value);
-  My_Decoder.value = 0;
+  drive.refresh();
 }
 
 

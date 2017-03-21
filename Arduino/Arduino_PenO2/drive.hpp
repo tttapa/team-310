@@ -2,6 +2,7 @@
 #define LIGHT 1
 
 const unsigned long remote_timeout = 200;
+const unsigned long speed_timeout = 600;
 
 const float ROT_SPEED_FAC = 0.5;
 
@@ -53,32 +54,29 @@ class Drive {
           brk();
           break;
         case SPEEDUP:
-          if(++_speed >= nb_speed_levels) {
-            _speed = nb_speed_levels - 1;
-            biep(20);
-          }
+          speedup();
           break;
         case SPEEDDOWN:
-          if(_speed-- == 0) {
-            biep(20);
-            _speed = 0;
-          }
+          speeddown();
           break;
         default:
           break;
       }
-      if(millis() > (_lastDriveCmd + remote_timeout)) {
+    }
+    void refresh() {
+      if(millis() > (_lastDriveCmd + remote_timeout) && ! _braked) {
         brk();
       }
       if(millis() > _biepEnd)
         biepOff();
-      Serial.print("Speed:\t");
-      Serial.println(_speed);
     }
   private:
     uint8_t _dir_L, _dir_R, _en_L, _en_R, _speed, _buzzer;
     unsigned long _lastDriveCmd;
+    unsigned long _lastSpdUpCmd;
+    unsigned long _lastSpdDwnCmd;
     unsigned long _biepEnd;
+    boolean _braked = true;
     void fwd() {
       Serial.println("forward");
       digitalWrite(_dir_L, LOW); // Set the direction of both motors to forward
@@ -86,6 +84,7 @@ class Drive {
       analogWrite(_en_L, SPEED_LEVELS[_speed]);
       analogWrite(_en_R, SPEED_LEVELS[_speed]);
       _lastDriveCmd = millis();
+      _braked = false;
     }
     void bwd() {
       Serial.println("backward");
@@ -94,6 +93,7 @@ class Drive {
       analogWrite(_en_L, SPEED_LEVELS[_speed]);
       analogWrite(_en_R, SPEED_LEVELS[_speed]);
       _lastDriveCmd = millis();
+      _braked = false;
     }
     void lft() {
       Serial.println("left");
@@ -102,6 +102,7 @@ class Drive {
       analogWrite(_en_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       analogWrite(_en_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       _lastDriveCmd = millis();
+      _braked = false;
     }
     void rgt() {
       Serial.println("left");
@@ -110,11 +111,35 @@ class Drive {
       analogWrite(_en_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       analogWrite(_en_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       _lastDriveCmd = millis();
+      _braked = false;
     }
     void brk() {
       Serial.println("brake");
       digitalWrite(_en_L, 0);
       digitalWrite(_en_R, 0);
+      _braked = true;
+    }
+    void speedup() {
+      if(millis() > (_lastSpdUpCmd + speed_timeout)) {
+        if(++_speed >= nb_speed_levels) {
+          _speed = nb_speed_levels - 1;
+          biep(60);
+        }
+        _lastSpdUpCmd = millis();
+      }
+      Serial.print("Speed:\t");
+      Serial.println(_speed);
+    }
+    void speeddown() {
+      if(millis() > (_lastSpdDwnCmd + speed_timeout)) {
+        if(_speed-- == 0) {
+          biep(10);
+          _speed = 0;
+        }
+        _lastSpdDwnCmd = millis();
+      }
+      Serial.print("Speed:\t");
+      Serial.println(_speed);
     }
 
     void biep(unsigned long len) {
