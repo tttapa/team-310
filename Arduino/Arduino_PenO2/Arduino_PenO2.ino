@@ -5,8 +5,12 @@
 const uint8_t IR_REMOTE = 2;
 const uint8_t SPEED_SENSE = 3;
 const uint8_t LINE_LED = 4;
+const uint8_t SPEED_L = 5;
+const uint8_t SPEED_R = 6;
+const uint8_t DIRECTION_L = 7;
+const uint8_t DIRECTION_R = 8;
 
-Drive drive(7, 8, 5, 6); // Left direction, right direction, left speed, right speed
+Drive drive(DIRECTION_L, DIRECTION_R, SPEED_L, SPEED_R);
 
 IRrecv My_Receiver(IR_REMOTE);
 
@@ -26,9 +30,9 @@ void loop() {
     My_Receiver.resume();
     My_Decoder.decode();
     Serial.println(My_Decoder.value, HEX);
-    
-    drive.checkIR(My_Decoder);
   }
+  drive.checkIR(My_Decoder.value);
+  My_Decoder.value = 0;
 }
 
 
