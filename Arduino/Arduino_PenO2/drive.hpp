@@ -224,6 +224,7 @@ class Drive {
         lft();
       } else if (getLeftColor() == TAPE && getRightColor() == TAPE) {
         // _charging = true;
+        brk();
         digitalWrite(_buzzer, HIGH);
         delay(200);
         digitalWrite(_buzzer, LOW);
