@@ -5,6 +5,9 @@
 #define C 0b110
 #define P 0b101
 #define W 0b111
+#define RAINBOW 0b1000
+
+const uint8_t rainbowColors[] = {R, G, B};
 
 const int lightThreshold = 600;
 
@@ -40,12 +43,16 @@ class Lights {
           _color = G;
           break;
         case LIGHTS_YELLOW:
-          Serial.println("Lights purple");
+          Serial.println("Lights white");
           _color = W;
           break;
         case LIGHTS_BLUE:
           Serial.println("Lights blue");
           _color = B;
+          break;
+        case LIGHTS_RAINBOW:
+          Serial.println("Lights rainbow");
+          _color = RAINBOW;
           break;
         case LIGHTS_AUTO:
           if (millis() > (_lastAutoCmd + auto_timeout)) {
@@ -59,7 +66,8 @@ class Lights {
           break;
       }
     }
-    void refresh() {
+    void refresh(uint8_t speed) {
+      _delayTime = 150 / (speed + 1);
       if ( millis() > _next) {
         if (_auto) {
           int lightLevel = analogRead(LIGHT_SENSOR);
@@ -71,9 +79,15 @@ class Lights {
           _next = millis() + _delayTime;
           _counter = (_counter + 1) % 8;
         } else {
-          shift(3, (_counter >> 3) ? _color : 0);
-          _next = millis() + _delayTime;
-          _counter = (_counter + 1) % 16;
+          if (_color == RAINBOW) {
+            shift(3, 1 << (_counter / 8));
+            _next = millis() + _delayTime;
+            _counter = (_counter + 1) % 24;
+          } else {
+            shift(3, (_counter >> 3) ? _color : 0);
+            _next = millis() + _delayTime;
+            _counter = (_counter + 1) % 16;
+          }
         }
       }
     }

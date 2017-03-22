@@ -48,7 +48,7 @@ void loop() {
     My_Decoder.value = 0;
   }
   drive.refresh();
-  lights.refresh();
+  lights.refresh(drive.getSpeed());
 }
 
 

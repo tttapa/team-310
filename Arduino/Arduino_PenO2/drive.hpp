@@ -14,7 +14,7 @@ const unsigned int darkThreshold = 600;
 const float ROT_SPEED_FAC = 0.5;
 
 const size_t nb_speed_levels = 3;
-const uint8_t SPEED_LEVELS[nb_speed_levels] = {4, 63, 255};
+const uint8_t SPEED_LEVELS[nb_speed_levels] = {31, 63, 255};
 
 class Drive {
   public:
@@ -103,6 +103,11 @@ class Drive {
         Serial.print("Found Line\t");
 #endif
     }
+
+    
+    uint8_t getSpeed() {
+      return _speed;
+    }
   private:
     uint8_t _dir_L, _dir_R, _en_L, _en_R, _speed, _leftSens, _rightSens, _IRfollow, _buzzer;
     unsigned long _lastDriveCmd;
@@ -114,7 +119,7 @@ class Drive {
     boolean _foundRight = false;
     boolean _foundLeft = false;
     boolean _foundLine = false;
-
+    
     void fwd() {
       Serial.println("forward");
       digitalWrite(_dir_L, LOW); // Set the direction of both motors to forward
@@ -156,6 +161,24 @@ class Drive {
       digitalWrite(_en_L, 0);
       digitalWrite(_en_R, 0);
       _braked = true;
+    }
+    void lftFwd() {
+      Serial.println("left forward");
+      digitalWrite(_dir_L, LOW); // Set the direction of the both motors to forward
+      digitalWrite(_dir_R, LOW);
+      analogWrite(_en_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      analogWrite(_en_R, SPEED_LEVELS[_speed]);
+      _lastDriveCmd = millis();
+      _braked = false;
+    }
+    void rgtFwd() {
+      Serial.println("right forward");
+      digitalWrite(_dir_L, LOW); // Set the direction of the both motors to forward
+      digitalWrite(_dir_R, LOW);
+      analogWrite(_en_L, SPEED_LEVELS[_speed]);
+      analogWrite(_en_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      _lastDriveCmd = millis();
+      _braked = false;
     }
     void speedup() {
       if (millis() > (_lastSpdUpCmd + speed_timeout)) {
@@ -219,12 +242,17 @@ class Drive {
 
     void followLine() {
       if (getRightColor() == TAPE && !getLeftColor() == TAPE) {
-        rgt();
+        rgtFwd();
       } else if (getLeftColor() == TAPE && !getRightColor() == TAPE)  {
-        lft();
+        lftFwd();
       } else if (getLeftColor() == TAPE && getRightColor() == TAPE) {
         // _charging = true;
         brk();
+        digitalWrite(_dir_L, LOW);
+        digitalWrite(_dir_R, LOW);
+#ifdef DEBUG
+        Serial.println("Reached charging station");
+#endif
         digitalWrite(_buzzer, HIGH);
         delay(200);
         digitalWrite(_buzzer, LOW);
@@ -266,7 +294,6 @@ class Drive {
     }
     int ambientReflectionDiff(uint8_t pin) {
 #ifdef TEST
-
       return 1023 - 1023*digitalRead(pin);
 #else
       int amb = analogRead(pin);
