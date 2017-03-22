@@ -38,26 +38,28 @@ void setup()
   My_Decoder.UseExtnBuf(Buffer);
 }
 
-uint8_t serialmessage[2];
+uint8_t serialMessage[2];
 boolean messageDone = false;
 
 void loop() {
   if (Serial.available() > 0) {
     uint8_t data = Serial.read();
+    Serial.print("Serial data:\t0x");
+    Serial.println(data & ~(1 << 7), HEX);
     if (data >> 7) {
-      messageDone = false;
-      serialmessage[0] = data;
-    } else {
+      serialMessage[0] = data;
+      if (data != 0b10000001) { // if it's not a speed message, the packet is only one byte long
+        messageDone = true;
+      }
+    } else if (serialMessage[0] == 0b10000001) {
+      serialMessage[1] = data;
       messageDone = true;
-      serialmessage[1] = data;
-      Serial.println("Message complete");
     }
-    Serial.println("Check");
   }
   if (messageDone) {
-    Serial.println(serialmessage[0], HEX);
-    drive.checkIR(serialmessage[0]);
-    lights.checkIR(serialmessage[0]);
+    Serial.println("Message is being processed");
+    drive.checkIR(serialMessage[0] & ~(1 << 7));
+    lights.checkIR(serialMessage[0] & ~(1 << 7));
     messageDone = false;
   }
 

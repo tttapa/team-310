@@ -1,0 +1,48 @@
+<html>
+<head>
+    <title>Team 310</title>
+    <link href='main.css' rel='stylesheet' type='text/css'>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="144x144"  href="/favicon-144x144.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00878f">
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+</head>
+<body>
+	<article>
+        <header>
+            <h1>Team 310 - P&amp;02</h1>
+        </header>
+        <div id="buttons">
+        </div>
+	</article>
+    <script type="text/javascript">
+        var commands = ["Fwd", "Bwd", "Lft", "Rgt"];
+
+        var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+        connection.onopen = function () {
+            console.log('Opening WebSocket connection');
+        };
+        connection.onerror = function (error) {
+            console.log('WebSocket Error ', error);
+        };
+        connection.onmessage = function (e) {  
+            console.log('Server: ', e.data);
+        };
+        connection.onclose = function(){
+            console.log('WebSocket connection closed');
+        };
+
+        var arrayLength = commands.length;
+        for (let i = 0; i < arrayLength; i++) {
+            let btn = document.createElement("BUTTON");
+            btn.textContent = commands[i];
+            btn.onclick = function() {
+                connection.send(i.toString(16));
+            };
+            document.getElementById("buttons").appendChild(btn);
+        }
+    </script>
+</body>
+</html>
