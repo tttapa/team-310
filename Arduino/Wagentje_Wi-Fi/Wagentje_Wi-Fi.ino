@@ -65,18 +65,11 @@ void loop() {
 /*__________________________________________________________SETUP_FUNCTIONS__________________________________________________________*/
 
 void startWiFi() { // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
+  WiFi.mode(WIFI_AP);
   WiFi.softAP(ssid, password);             // Start the access point
   DEBUG_Serial.print("Access Point \"");
   DEBUG_Serial.print(ssid);
   DEBUG_Serial.println("\" started\r\n");
-
-  DEBUG_Serial.println("Connecting");
-  while (WiFi.softAPgetStationNum() < 1) {  // Wait for the Wi-Fi to connect
-    delay(250);
-    DEBUG_Serial.print('.');
-  }
-  DEBUG_Serial.println("\r\n");
-  DEBUG_Serial.println("Station connected to ESP8266 AP");
 }
 
 void startOTA() { // Start the OTA service
