@@ -72,9 +72,9 @@ class Lights {
         if (_auto) {
           int lightLevel = analogRead(LIGHT_SENSOR);
           if ( lightLevel > lightThreshold) {
-            shift(3, _counter >= ( lightLevel - lightThreshold ) * 8 / (1023 - lightThreshold) ? 0 : _color);
+            shift(3, _counter >= ( lightLevel - lightThreshold ) * 7 / (1023 - lightThreshold) + 1 ? 0 : _color);
           } else {
-            shift(3, 0);
+            shift(3, _counter >= 1 ? 0 : _color);
           }
           _next = millis() + _delayTime;
           _counter = (_counter + 1) % 8;

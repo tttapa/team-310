@@ -38,7 +38,29 @@ void setup()
   My_Decoder.UseExtnBuf(Buffer);
 }
 
+uint8_t serialmessage[2];
+boolean messageDone = false;
+
 void loop() {
+  if (Serial.available() > 0) {
+    uint8_t data = Serial.read();
+    if (data >> 7) {
+      messageDone = false;
+      serialmessage[0] = data;
+    } else {
+      messageDone = true;
+      serialmessage[1] = data;
+      Serial.println("Message complete");
+    }
+    Serial.println("Check");
+  }
+  if (messageDone) {
+    Serial.println(serialmessage[0], HEX);
+    drive.checkIR(serialmessage[0]);
+    lights.checkIR(serialmessage[0]);
+    messageDone = false;
+  }
+
   if (My_Receiver.GetResults(&My_Decoder)) {
     My_Receiver.resume();
     My_Decoder.decode();
