@@ -38,9 +38,14 @@
         for (let i = 0; i < arrayLength; i++) {
             let btn = document.createElement("BUTTON");
             btn.textContent = commands[i];
-            btn.onclick = function() {
-                connection.send(i.toString(16));
+            btn.onmousedown = function() {
+                this.timer = setInterval(function() {
+                    connection.send(i.toString(16));
+                }, 100);
             };
+            btn.onmouseup = function() {
+                clearInterval(this.timer);
+            }
             document.getElementById("buttons").appendChild(btn);
         }
     </script>
