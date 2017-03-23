@@ -1,4 +1,5 @@
 #define DVD
+#define WIFI
 
 const uint8_t IR_REMOTE = 2;
 const uint8_t SPEED_SENSE = 3;
@@ -38,10 +39,13 @@ void setup()
   My_Decoder.UseExtnBuf(Buffer);
 }
 
+#ifdef WIFI
 uint8_t serialMessage[2];
 boolean messageDone = false;
+#endif
 
 void loop() {
+#ifdef WIFI
   if (Serial.available() > 0) {
     uint8_t data = Serial.read();
     Serial.print("Serial data:\t0x");
@@ -62,7 +66,7 @@ void loop() {
     lights.checkIR(serialMessage[0] & ~(1 << 7));
     messageDone = false;
   }
-
+#endif
   if (My_Receiver.GetResults(&My_Decoder)) {
     My_Receiver.resume();
     My_Decoder.decode();

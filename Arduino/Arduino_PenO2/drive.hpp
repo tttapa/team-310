@@ -14,7 +14,7 @@ const unsigned int darkThreshold = 600;
 const float ROT_SPEED_FAC = 0.5;
 
 const size_t nb_speed_levels = 3;
-const uint8_t SPEED_LEVELS[nb_speed_levels] = {31, 63, 255};
+const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
 
 class Drive {
   public:
