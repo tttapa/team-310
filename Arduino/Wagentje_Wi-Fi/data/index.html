@@ -36,9 +36,10 @@
 
         var arrayLength = commands.length;
         for (let i = 0; i < arrayLength; i++) {
-            let btn = document.createElement("BUTTON");
-            btn.textContent = commands[i];
+            let btn = document.createElement("DIV");
+            //btn.textContent = commands[i];
             btn.onmousedown = function() {
+                connection.send(i.toString(16));
                 this.timer = setInterval(function() {
                     connection.send(i.toString(16));
                 }, 100);
@@ -46,8 +47,18 @@
             btn.onmouseup = function() {
                 clearInterval(this.timer);
             }
+            btn.onmouseleave = function() {
+                clearInterval(this.timer);
+            }
             document.getElementById("buttons").appendChild(btn);
         }
     </script>
+    <style>
+        div#buttons>div {
+            width: 100%;
+            height: 2em;
+            border: 1px solid black;
+        }
+    </style>
 </body>
 </html>
