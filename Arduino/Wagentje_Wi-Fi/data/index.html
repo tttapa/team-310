@@ -8,6 +8,21 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#00878f">
     <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+	<style>
+		.controlls{
+			background-color: #4CAF50;
+			color: white;
+			padding: 16px;
+			font-size: 16px;
+			border: 1px solid black;
+			cursor: pointer;
+			width: 100px;
+			padding: 10px;
+			margin: 10px 0px;
+			}
+    </style>	
+	
+	
 </head>
 <body>
 	<article>
@@ -17,10 +32,17 @@
         <div id="buttons">
         </div>
 	</article>
-    <script type="text/javascript">
-        var commands = ["Fwd", "Bwd", "Lft", "Rgt"];
 
-        var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+    <script type="text/javascript">
+		var num = 0;
+		function write(text) {
+			var s = document.createTextNode(text);
+			document.getElementById("buttons").appendChild(s);
+			num++;
+			}
+		var command_names = ["Forward", "Backward", "Left", "Right"];
+		var commands = ["Fwd", "Bwd", "Lft", "Rgt"];
+		var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
         connection.onopen = function () {
             console.log('Opening WebSocket connection');
         };
@@ -33,32 +55,29 @@
         connection.onclose = function(){
             console.log('WebSocket connection closed');
         };
-
         var arrayLength = commands.length;
-        for (let i = 0; i < arrayLength; i++) {
-            let btn = document.createElement("DIV");
-            //btn.textContent = commands[i];
-            btn.onmousedown = function() {
-                connection.send(i.toString(16));
+        for (var i = 0; i < arrayLength; i++) {
+            var btn = document.createElement("DIV");
+            //btn.textContent = commands[i]; done
+				btn.onmousedown = function() {
+				connection.send(i.toString(16));
                 this.timer = setInterval(function() {
                     connection.send(i.toString(16));
-                }, 100);
-            };
+					}, 100);
+				var l = document.createTextNode(command_names[i]);
+				document.getElementById("buttons").appendChild(l);
+				};
             btn.onmouseup = function() {
                 clearInterval(this.timer);
             }
             btn.onmouseleave = function() {
                 clearInterval(this.timer);
-            }
+            }  
+			t = document.createTextNode(commands[i]);
+			btn.appendChild(t);
+			btn.setAttribute("class", "controlls");
             document.getElementById("buttons").appendChild(btn);
         }
     </script>
-    <style>
-        div#buttons>div {
-            width: 100%;
-            height: 2em;
-            border: 1px solid black;
-        }
-    </style>
 </body>
 </html>
