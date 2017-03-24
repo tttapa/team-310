@@ -64,8 +64,6 @@
                 this.timer = setInterval(function() {
                     connection.send(i.toString(16));
 					}, 100);
-				var l = document.createTextNode(command_names[i]);
-				document.getElementById("buttons").appendChild(l);
 				};
             btn.onmouseup = function() {
                 clearInterval(this.timer);
