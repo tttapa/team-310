@@ -11,7 +11,7 @@ const float minVoltage = 2.4;
 const float maxVoltage = 3.3;
 
 const char *ssid         = "Team 310";
-const char *password     = "thereisnospoon";
+const char *password     = "pieter2016";
 
 //const int8_t arrow[][2] = { { -2, -3}, { -2, -7}, { -6, -7}, {0, -13}, {6, -7}, {2, -7}, {2, -3}, { -2, -3}};
 const int8_t arrow[][2] = { { -4, -5}, { -4, -13}, { -10, -13}, {0, -23}, {10, -13}, {4, -13}, {4, -5}, { -4, -5}};
@@ -21,6 +21,8 @@ const int8_t wifi[][2] = { {4, 0}, {4, 0} };
 SSD1306  display(0x3c, 4, 5);
 
 void setup() {
+  delay(200);
+  WiFi.mode(WIFI_AP);
   WiFi.softAP ( ssid, password );
 
   display.init();
@@ -70,7 +72,10 @@ void loop() {
     display.setTextAlignment(TEXT_ALIGN_CENTER);
     int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage));
     drawBattery(0, 1, batLevel);
+    
     drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, 4 * voltage);
+
+    drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, 4 * voltage, 20);
 
     display.display();
     nextRefresh = millis() + refresh;
@@ -121,6 +126,10 @@ void drawArrow(int16_t x, int16_t y, int orientation) {
       }
       break;
   }
+}
 
+void drawMeter(int16_t x, int16_t y, float value, int radius) {
+  display.drawCircle(x,y,radius);
+  display.fillCircle(x,y,radius-4);
 }
 
