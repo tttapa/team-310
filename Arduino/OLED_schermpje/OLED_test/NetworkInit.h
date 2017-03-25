@@ -17,9 +17,9 @@ void startWiFi() {
   int i = 0;
   unsigned long nextWiFiFrame = millis();
   unsigned long frameTime = 250;
-  
+
   while (WiFi.status() != WL_CONNECTED && WiFi.softAPgetStationNum() == 0) { // Wait for the Wi-Fi to connect
-    if(millis() > nextWiFiFrame) {
+    if (millis() > nextWiFiFrame) {
       display.clear();
 
       display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");
@@ -35,10 +35,10 @@ void startWiFi() {
       display.setFont(ArialMT_Plain_10);
       display.drawXbm(106, 1, 11, 9, wifi_bits[i]); // Show the Wi-Fi icon in the top bar
       display.display(); // send the frame buffer to the display
-      
+
       i++;
-      i%=4;
-      nextWiFiFrame = millis()+frameTime;
+      i %= 4;
+      nextWiFiFrame = millis() + frameTime;
     }
     yield();
   }
@@ -48,18 +48,27 @@ void startWiFi() {
 void startOTA() { // start the Over The Air update services
   ArduinoOTA.begin();
   ArduinoOTA.onStart([]() {
-    if(WiFi.status() != WL_CONNECTED)
+    if (WiFi.status() != WL_CONNECTED)
       WiFi.disconnect();
   });
 
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    int prog = progress * 100 / total;
     display.clear();
     display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
-    display.setFont(ArialMT_Plain_16);
-    display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 - 15, "Uploading ...");
-    display.drawProgressBar(3, DISPLAY_HEIGHT / 2 - 3, 122, 8, progress / (total / 100) );
+    if (prog < 20) {
+      display.setFont(ArialMT_Plain_10);
+      display.drawString(DISPLAY_WIDTH / 2, 1 * DISPLAY_HEIGHT / 4, "Sending data to\nthe NSA ...");
+    } else if (prog < 35) {
+      display.setFont(ArialMT_Plain_10);
+      display.drawString(DISPLAY_WIDTH / 2, 1 * DISPLAY_HEIGHT / 4, "Euh, I mean ...");
+    } else {
+      display.setFont(ArialMT_Plain_16);
+      display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 - 15, "Updating ...");
+    }
+    display.drawProgressBar(3, DISPLAY_HEIGHT / 2, 122, 8, prog );
     display.setFont(ArialMT_Plain_10);
-    display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 + 16, String(progress * 100 / total) + "%");
+    display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 + 16, String(prog) + "%");
     display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 + 26, String(progress) + "/" + String(total));
     display.display();
   });
