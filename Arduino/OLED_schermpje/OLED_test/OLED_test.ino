@@ -8,6 +8,13 @@ const char *APpassword     = "pieter2016";
 #include "WiFiCredentials.h"
 #endif
 
+const float R1 = 71000; // values of the voltage divider to measure the battery voltage
+const float R2 = 9500;
+const float ResRatio = R2 / (R1 + R2);
+
+const float minVoltage = 2.4; // minimum battery voltage
+const float maxVoltage = 3.27; // voltage of fully charged battery
+
 #include "Images/moon1.h" // include some XBM images
 #include "Images/sun.h"
 //#include "Images/wifi3.h"
@@ -19,12 +26,7 @@ const char *APpassword     = "pieter2016";
 #include "OLED.h" // some custom display functions           
 #include "NetworkInit.h"
 
-const float R1 = 71000; // values of the voltage divider to measure the battery voltage
-const float R2 = 9500;
-const float ResRatio = R2 / (R1 + R2);
 
-const float minVoltage = 2.4; // minimum battery voltage
-const float maxVoltage = 3.27; // voltage of fully charged battery
 
 void setup() {
   DEBUG_Serial.begin(115200);
@@ -35,8 +37,7 @@ void setup() {
 
   startOTA(); // start the Over The Air update services
 
-  startWiFi();  
-
+  startWiFi();
 }
 
 unsigned long refresh = 50;
@@ -63,16 +64,17 @@ void loop() {
     int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage)); // convert voltage to battery level
     drawBattery(0, 1, batLevel); // show the battery level in the top bar
 
-    if (WiFi.softAPgetStationNum() > 0) { // If there are stations connected to the access point
-      display.drawXbm(106, 0, 11, 9, wifi_bits[3]); // Show the Wi-Fi icon in the top bar
+    if (WiFi.softAPgetStationNum() > 0 || WiFi.status() == WL_CONNECTED) { // If there are stations connected to the access point
+      display.drawXbm(106, 1, 11, 9, wifi_bits[3]); // Show the Wi-Fi icon in the top bar
+      display.drawString(122, 0, String(WiFi.softAPgetStationNum()));
     }
 
     if (lights == 0) // if the lights are off
-      display.drawXbm(119, 0, 9, 9, moon1_bits); // show a moon symbol in the top bar
+      display.drawXbm(20, 1, 9, 9, moon1_bits); // show a moon symbol in the top bar
     else if (lights == 1) // if the lights are on
-      display.drawXbm(119, 0, 9, 9, sun_bits); // show a sun symbol in the top bar
+      display.drawXbm(20, 1, 9, 9, sun_bits); // show a sun symbol in the top bar
     else // if the lights are in automatic mode
-      display.drawXbm(119, 0, 9, 9, A_bits); // show the letter A in the top bar
+      display.drawXbm(20, 1, 9, 9, A_bits); // show the letter A in the top bar
 
     if (movement < 4)
       drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement); // show an arrow indicating the direction of the movement

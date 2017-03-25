@@ -16,19 +16,30 @@ void startWiFi() {
 
   int i = 0;
   unsigned long nextWiFiFrame = millis();
-  unsigned long frameTime = 200;
+  unsigned long frameTime = 250;
   
-  while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
+  while (WiFi.status() != WL_CONNECTED && WiFi.softAPgetStationNum() == 0) { // Wait for the Wi-Fi to connect
     if(millis() > nextWiFiFrame) {
       display.clear();
-      display.drawXbm(106, 0, 11, 9, wifi_bits[i]); // Show the Wi-Fi icon in the top bar
+
+      display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");
+
+      float voltage = analogRead(A0) / ResRatio / 1024.0;
+      //display.setTextAlignment(TEXT_ALIGN_RIGHT);
+      //display.drawString(DISPLAY_WIDTH, 0, String(voltage) + "V");
+      //display.setTextAlignment(TEXT_ALIGN_CENTER);
+      int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage)); // convert voltage to battery level
+      drawBattery(0, 1, batLevel); // show the battery level in the top bar
+      display.setFont(ArialMT_Plain_16);
+      display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 - 15, String("Connecting to\n") + String(ssid));
+      display.setFont(ArialMT_Plain_10);
+      display.drawXbm(106, 1, 11, 9, wifi_bits[i]); // Show the Wi-Fi icon in the top bar
       display.display(); // send the frame buffer to the display
       
       i++;
       i%=4;
       nextWiFiFrame = millis()+frameTime;
     }
-    ArduinoOTA.handle();
     yield();
   }
 #endif
@@ -37,6 +48,8 @@ void startWiFi() {
 void startOTA() { // start the Over The Air update services
   ArduinoOTA.begin();
   ArduinoOTA.onStart([]() {
+    if(WiFi.status() != WL_CONNECTED)
+      WiFi.disconnect();
   });
 
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
