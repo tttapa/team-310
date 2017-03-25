@@ -19,7 +19,9 @@ void fillGoodCircle(int16_t x0, int16_t y0, int radius);
 
 void startDisplay() { // initialise the display
   display.init();
+#ifdef FLIP
   display.flipScreenVertically();
+#endif
   display.setContrast(255);
 
   display.clear();

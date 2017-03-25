@@ -4,6 +4,7 @@
 
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
+#define FLIP // flip the OLED display vertically
 
 const char *APssid         = "HAL 9310";
 const char *APpassword     = "pieter2001";
