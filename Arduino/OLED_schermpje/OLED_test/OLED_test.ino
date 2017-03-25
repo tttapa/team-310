@@ -1,12 +1,12 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 
-#include "moon1.h" // include some XBM images
-#include "sun.h"
-//#include "wifi3.h"
-#include "wifi5.h"
-#include "A.h"
-#include "Auto.h"
+#include "Images/moon1.h" // include some XBM images
+#include "Images/sun.h"
+//#include "Images/wifi3.h"
+#include "Images/wifi5.h"
+#include "Images/A.h"
+#include "Images/Auto.h"
 
 #include "OLED.h" // some custom display functions
 #include "NetworkInit.h"
