@@ -105,6 +105,6 @@ void startMDNS() { // Start the mDNS responder
 
 void startDNS() {
   dnsServer.start(DNS_PORT, String(dnsName)+".kul", apIP);
-  DEBUG_Serial.println("DNS server started on "+String(dnsName)+".kul");
+  DEBUG_Serial.println("DNS server started on http://"+String(dnsName)+".kul");
 }
 

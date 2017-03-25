@@ -4,7 +4,7 @@
 
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
-#define FLIP // flip the OLED display vertically
+//#define FLIP // flip the OLED display upside down
 
 const char *APssid         = "HAL 9310";
 const char *APpassword     = "pieter2001";
@@ -21,7 +21,7 @@ const char *OTAName = "HAL 9310";           // A name and a password for the OTA
 const char *OTAPassword = "esp8266";
 
 const float R1 = 71000;                     // values of the voltage divider to measure the battery voltage
-const float R2 = 9500;
+const float R2 = 9450;
 const float ResRatio = R2 / (R1 + R2);
 
 const float minVoltage = 2.4;               // minimum battery voltage
@@ -138,7 +138,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       DEBUG_Serial.printf("[%u] get Text: %s: \t", num, payload);
       int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS;
       DEBUG_Serial.println(commands[index], HEX);
-      Serial.write(commands[index] | 1 << 7);
+      Serial.write(commands[index] | (1 << 7));
       break;
   }
 }
