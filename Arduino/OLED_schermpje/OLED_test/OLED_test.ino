@@ -1,14 +1,22 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
+#define DEBUG_Serial Serial1
+
+#define STATION
+
+const char *APssid         = "Team 310";
+const char *APpassword     = "pieter2016";
+#ifdef STATION
+#include "WiFiCredentials.h"
+#endif
 
 #include "Images/moon1.h" // include some XBM images
 #include "Images/sun.h"
 //#include "Images/wifi3.h"
-#include "Images/wifi5.h"
+//#include "Images/wifi5.h"
+#include "Images/wifi.h"
 #include "Images/A.h"
 #include "Images/Auto.h"
 
-#include "OLED.h" // some custom display functions
+#include "OLED.h" // some custom display functions           
 #include "NetworkInit.h"
 
 const float R1 = 71000; // values of the voltage divider to measure the battery voltage
@@ -18,19 +26,17 @@ const float ResRatio = R2 / (R1 + R2);
 const float minVoltage = 2.4; // minimum battery voltage
 const float maxVoltage = 3.27; // voltage of fully charged battery
 
-const char *ssid         = "Team 310";
-const char *password     = "pieter2016";
-
 void setup() {
-  Serial.begin(115200);
+  DEBUG_Serial.begin(115200);
   delay(20);
-  Serial.println("\n\r\nSetup");
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP (ssid, password); // Start a Wi-Fi access point
+  DEBUG_Serial.println("\n\r\nSetup");
 
   startDisplay();
 
   startOTA(); // start the Over The Air update services
+
+  startWiFi();  
+
 }
 
 unsigned long refresh = 50;
@@ -58,7 +64,7 @@ void loop() {
     drawBattery(0, 1, batLevel); // show the battery level in the top bar
 
     if (WiFi.softAPgetStationNum() > 0) { // If there are stations connected to the access point
-      display.drawXbm(106, 0, 11, 9, wifi5_bits); // Show the Wi-Fi icon in the top bar
+      display.drawXbm(106, 0, 11, 9, wifi_bits[3]); // Show the Wi-Fi icon in the top bar
     }
 
     if (lights == 0) // if the lights are off
@@ -74,7 +80,7 @@ void loop() {
       display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits); // Indicate that the wheelchair is navigating on autopilot
 
     drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, voltage / maxVoltage, 27); // draw the speedometer (based on the voltage level)
-    display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(voltage * 3)); // draw the number under the speed gauge
+    display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(voltage)); // draw the number under the speed gauge
 
     display.display(); // send the frame buffer to the display
     nextRefresh = millis() + refresh;
