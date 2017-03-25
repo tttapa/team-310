@@ -49,6 +49,9 @@ void startWiFi() {
     }
     yield();
   }
+  if(WiFi.status() == WL_CONNECTED) {
+    DEBUG_Serial.println("Connected");
+  }
 #endif
 }
 

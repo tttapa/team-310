@@ -33,9 +33,9 @@ const char* mdnsName = "team-310"; // Domain name for the mDNS responder
 
 void setup() {
   DEBUG_Serial.begin(115200);        // Start the Serial communication to send messages to the computer
-  Serial.begin(115200);
+  Serial.begin(115200);              // Start the Serial communication with the ATmega328P
   delay(10);
-  DEBUG_Serial.println("\r\n");
+  DEBUG_Serial.println("\r\nI read you, Dave.");
 
   startWiFi();                 // Start a Wi-Fi access point. Then wait for a station connection
   

@@ -1,8 +1,8 @@
 #include <WebSocketsServer.h>
 
-#define DEBUG_Serial Serial1
+#define DEBUG_Serial Serial1 // Use Serial1 for debugging, and Serial for communication with the ATmega
 
-#define STATION
+#define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
 
 const char *APssid         = "HAL 9310";
@@ -11,21 +11,20 @@ const char *APpassword     = "pieter2001";
 #include "WiFiCredentials.h"
 #endif
 
-const char* WiFiHostname = "HAL-9310";
-const char* dnsName = "HAL-9310"; // Domain name for the mDNS responder
+const char* WiFiHostname = "HAL-9310";      // Host name of the device
+const char* dnsName = "HAL-9310";           // Domain name for the mDNS responder
+const byte DNS_PORT = 53;                   // The port of the DNS server
+IPAddress apIP(3, 1, 0, 1);                 // The IP address of the access point
 
-const byte DNS_PORT = 53;
-IPAddress apIP(3, 1, 0, 1);
-
-const char *OTAName = "HAL 9310";           // A name and a password for the OTA service
+const char *OTAName = "HAL 9310";           // A name and a password for the OTA service, to upload new firmware
 const char *OTAPassword = "esp8266";
 
-const float R1 = 71000; // values of the voltage divider to measure the battery voltage
+const float R1 = 71000;                     // values of the voltage divider to measure the battery voltage
 const float R2 = 9500;
 const float ResRatio = R2 / (R1 + R2);
 
-const float minVoltage = 2.4; // minimum battery voltage
-const float maxVoltage = 3.27; // voltage of fully charged battery
+const float minVoltage = 2.4;               // minimum battery voltage
+const float maxVoltage = 3.27;              // voltage of fully charged battery
 
 // function prototypes
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
@@ -36,24 +35,25 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 #include "Images/Auto.h"
 
 #include "OLED.h" // some custom display functions
-#include "NetworkInit.h"
-#include "ServerInit.h"
+#include "NetworkInit.h" // Connect WiFi, start OTA, DNS, mDNS ...
+#include "ServerInit.h" // HTTP server, WebSocket, server handlers ...
 
-#include "Commands.h"
+#include "Commands.h" // HEX codes of the IR remote
 
 #define NB_OF_COMMANDS 9
 const uint8_t commands[NB_OF_COMMANDS] = { FORWARD, BACKWARD, LEFT, RIGHT, BRAKE, SPEEDUP, SPEEDDOWN, CHG_STATION, MANUAL};
 
 void setup() {
-  DEBUG_Serial.begin(115200);
-  delay(20);
-  DEBUG_Serial.println("\n\r\nSetup");
+  DEBUG_Serial.begin(115200);        // Start the Serial communication to send messages to the computer
+  Serial.begin(115200);              // Start the Serial communication with the ATmega328P
+  delay(10);
+  DEBUG_Serial.println("\r\nI read you, Dave.");
 
-  startDisplay();
+  startDisplay();              // initialise the display
 
-  startOTA(); // start the Over The Air update services
+  startOTA();                  // start the Over The Air update services
 
-  startWiFi();
+  startWiFi();                 // Start an access point, and connect to the network specified above
 
   startSPIFFS();               // Start the SPIFFS and list all contents
 
