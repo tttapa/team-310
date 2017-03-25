@@ -2,9 +2,18 @@
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
+#include <DNSServer.h>
+
+DNSServer dnsServer;
 
 void startWiFi() {
+  WiFi.hostname(WiFiHostname);
+#ifdef STATION
+  WiFi.mode(WIFI_AP_STA);
+#else
   WiFi.mode(WIFI_AP);
+#endif
+  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
   WiFi.softAP(APssid, APpassword);             // Start the access point
   DEBUG_Serial.print("Access Point \"");
   DEBUG_Serial.print(APssid);
@@ -25,11 +34,9 @@ void startWiFi() {
       display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");
 
       float voltage = analogRead(A0) / ResRatio / 1024.0;
-      //display.setTextAlignment(TEXT_ALIGN_RIGHT);
-      //display.drawString(DISPLAY_WIDTH, 0, String(voltage) + "V");
-      //display.setTextAlignment(TEXT_ALIGN_CENTER);
       int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage)); // convert voltage to battery level
       drawBattery(0, 1, batLevel); // show the battery level in the top bar
+
       display.setFont(ArialMT_Plain_16);
       display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 - 15, String("Connecting to\n") + String(ssid));
       display.setFont(ArialMT_Plain_10);
@@ -46,7 +53,9 @@ void startWiFi() {
 }
 
 void startOTA() { // start the Over The Air update services
-  ArduinoOTA.begin();
+  ArduinoOTA.setHostname(OTAName);
+  ArduinoOTA.setPassword(OTAPassword);
+
   ArduinoOTA.onStart([]() {
     if (WiFi.status() != WL_CONNECTED)
       WiFi.disconnect();
@@ -80,4 +89,19 @@ void startOTA() { // start the Over The Air update services
     display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, "Rebooting ...");
     display.display();
   });
+  ArduinoOTA.begin();
+
 }
+
+void startMDNS() { // Start the mDNS responder
+  MDNS.begin(dnsName);                        // start the multicast domain name server
+  DEBUG_Serial.print("mDNS responder started: http://");
+  DEBUG_Serial.print(dnsName);
+  DEBUG_Serial.println(".local");
+}
+
+void startDNS() {
+  dnsServer.start(DNS_PORT, String(dnsName)+".kul", apIP);
+  DEBUG_Serial.println("DNS server started on "+String(dnsName)+".kul");
+}
+
