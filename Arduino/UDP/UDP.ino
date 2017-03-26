@@ -1,6 +1,6 @@
 #include <WebSocketsServer.h>
 
-#define DEBUG_Serial Serial1 // Use Serial1 for debugging, and Serial for communication with the ATmega
+#define DEBUG_Serial Serial // Use Serial1 for debugging, and Serial for communication with the ATmega
 
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
@@ -148,6 +148,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS;
       DEBUG_Serial.println(commands[index], HEX);
       Serial.write(commands[index] | (1 << 7));
+      switch(commands[index]) {
+       case FORWARD:
+         movement = 0;
+         break;
+       case LEFT:
+         movement = 1;
+         break;
+       case BACKWARD:
+         movement = 2;
+         break;
+       case RIGHT:
+         movement = 3;
+         break;
+       default:
+         movement = 4;
+         break;
+     }
       break;
   }
 }

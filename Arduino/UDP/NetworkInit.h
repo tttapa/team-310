@@ -8,6 +8,8 @@
 DNSServer dnsServer;
 WiFiUDP udp;
 
+boolean reset();
+
 void startWiFi() {
   WiFi.hostname(WiFiHostname);
 #ifdef STATION
@@ -16,12 +18,12 @@ void startWiFi() {
   WiFi.mode(WIFI_AP);
 #endif
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(APssid, APpassword);             // Start the access point
+  WiFi.softAP(APssid, APpassword) || reset();             // Start the access point
   DEBUG_Serial.print("Access Point \"");
   DEBUG_Serial.print(APssid);
   DEBUG_Serial.println("\" started\r\n");
 #ifdef STATION
-  WiFi.begin(ssid, password);             // Connect to the network
+  WiFi.begin(ssid, password) || reset();            // Connect to the network
   DEBUG_Serial.print("Connecting to ");
   DEBUG_Serial.print(ssid); DEBUG_Serial.println(" ...");
 
@@ -51,8 +53,10 @@ void startWiFi() {
     }
     yield();
   }
-  if(WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED) {
     DEBUG_Serial.println("Connected");
+    DEBUG_Serial.print("IP address:\t");
+    DEBUG_Serial.println(WiFi.localIP());
   }
 #endif
 }
@@ -94,24 +98,37 @@ void startOTA() { // start the Over The Air update services
     display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, "Rebooting ...");
     display.display();
   });
+  DEBUG_Serial.println("Starting OTA service ...");
   ArduinoOTA.begin();
-
+  DEBUG_Serial.println("Started");
 }
 
 void startMDNS() { // Start the mDNS responder
-  MDNS.begin(dnsName);                        // start the multicast domain name server
+  MDNS.begin(dnsName) || reset();                        // start the multicast domain name server
   DEBUG_Serial.print("mDNS responder started: http://");
   DEBUG_Serial.print(dnsName);
   DEBUG_Serial.println(".local");
 }
 
 void startDNS() {
-  dnsServer.start(DNS_PORT, String(dnsName)+".kul", apIP);
-  DEBUG_Serial.println("DNS server started on http://"+String(dnsName)+".kul");
+  DEBUG_Serial.print("Starting DNS server");
+  dnsServer.start(DNS_PORT, String(dnsName) + ".kul", apIP) || reset();
+  DEBUG_Serial.println("DNS server started on http://" + String(dnsName) + ".kul");
 }
 
 void startUDP() {
-  udp.begin(localPort);
+  DEBUG_Serial.println("Starting UDP service");
+  udp.begin(localPort) || reset();
   DEBUG_Serial.print("Started listening for UDP packets on port ");
   DEBUG_Serial.println(localPort);
 }
+
+boolean reset() {
+  display.setFont(ArialMT_Plain_16);
+  display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, "Fatal error :(");
+  display.display();
+  DEBUG_Serial.println("Failed.\r\nRebooting ...");
+  DEBUG_Serial.flush();
+  ESP.reset();
+}
+

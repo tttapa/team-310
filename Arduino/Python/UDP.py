@@ -14,4 +14,4 @@ while 1:
                             socket.SOCK_DGRAM) # UDP
         sock.sendto(bytes([i]), (UDP_IP, UDP_PORT))
 
-        time.sleep(1)
+        time.sleep(0.5)
