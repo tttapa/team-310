@@ -4,5 +4,5 @@ dir=*
 for file in $dir
 do
     echo "$file"
-    curl -F "file=@$file" "hal-9310.kul/edit.html"
+    curl -F "file=@$file" "hal-9310.local/edit.html"
 done

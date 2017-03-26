@@ -53,11 +53,6 @@ void startWiFi() {
     }
     yield();
   }
-  if (WiFi.status() == WL_CONNECTED) {
-    DEBUG_Serial.println("Connected");
-    DEBUG_Serial.print("IP address:\t");
-    DEBUG_Serial.println(WiFi.localIP());
-  }
 #endif
 }
 

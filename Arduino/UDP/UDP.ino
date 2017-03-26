@@ -1,6 +1,7 @@
 #include <WebSocketsServer.h>
 
-#define DEBUG_Serial Serial // Use Serial1 for debugging, and Serial for communication with the ATmega
+#define DEBUG_Serial Serial1  // Use Serial1 for debugging, and Serial for communication with the ATmega
+#define ATMEGA_Serial Serial1
 
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
@@ -17,7 +18,7 @@ const char* dnsName = "HAL-9310";           // Domain name for the mDNS responde
 const byte DNS_PORT = 53;                   // The port of the DNS server
 IPAddress apIP(3, 1, 0, 1);                 // The IP address of the access point
 
-const unsigned int localPort = 9310;      // local port to listen for UDP packets
+const unsigned int localPort = 9310;        // local port to listen for UDP packets
 
 const char *OTAName = "HAL 9310";           // A name and a password for the OTA service, to upload new firmware
 const char *OTAPassword = "esp8266";
@@ -48,7 +49,7 @@ const uint8_t commands[NB_OF_COMMANDS] = { FORWARD, BACKWARD, LEFT, RIGHT, BRAKE
 
 void setup() {
   DEBUG_Serial.begin(115200);        // Start the Serial communication to send messages to the computer
-  Serial.begin(115200);              // Start the Serial communication with the ATmega328P
+  ATMEGA_Serial.begin(115200);              // Start the Serial communication with the ATmega328P
   delay(10);
   DEBUG_Serial.println("\r\nI read you, Dave.");
 
@@ -131,6 +132,7 @@ void loop() {
     nextInterval = millis() + interval;
   }
   checkUDP();
+  printIP();
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
@@ -147,7 +149,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       DEBUG_Serial.printf("[%u] get Text: %s: \t", num, payload);
       int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS;
       DEBUG_Serial.println(commands[index], HEX);
-      Serial.write(commands[index] | (1 << 7));
+      ATMEGA_Serial.write(commands[index] | (1 << 7));
       switch(commands[index]) {
        case FORWARD:
          movement = 0;
@@ -196,3 +198,16 @@ void checkUDP() {
      }
   }
 }
+
+void printIP() {
+  static boolean printed = false;
+  if(printed)
+    return;
+  if (WiFi.status() == WL_CONNECTED) {
+    DEBUG_Serial.println("Connected");
+    DEBUG_Serial.print("IP address:\t");
+    DEBUG_Serial.println(WiFi.localIP());
+    printed = true;
+  }
+}
+
