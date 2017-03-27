@@ -95,10 +95,10 @@ void startOTA() { // start the Over The Air update services
   });
   DEBUG_Serial.println("Starting OTA service ...");
   ArduinoOTA.begin();
-  DEBUG_Serial.println("Started");
 }
 
 void startMDNS() { // Start the mDNS responder
+  DEBUG_Serial.println("Starting mDNS responder ...");
   MDNS.begin(dnsName) || reset();                        // start the multicast domain name server
   DEBUG_Serial.print("mDNS responder started: http://");
   DEBUG_Serial.print(dnsName);
@@ -119,6 +119,7 @@ void startUDP() {
 }
 
 boolean reset() {
+  display.clear();
   display.setFont(ArialMT_Plain_16);
   display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, "Fatal error :(");
   display.display();

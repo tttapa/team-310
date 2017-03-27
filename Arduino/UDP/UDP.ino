@@ -1,7 +1,5 @@
-#include <WebSocketsServer.h>
-
 #define DEBUG_Serial Serial1  // Use Serial1 for debugging, and Serial for communication with the ATmega
-#define ATMEGA_Serial Serial1
+#define ATMEGA_Serial Serial
 
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
@@ -25,12 +23,14 @@ const char *OTAPassword = "esp8266";
 
 const float R1 = 71000;                     // values of the voltage divider to measure the battery voltage
 const float R2 = 9450;
-const float ResRatio = R2 / (R1 + R2);
+const float ResRatio = R2 / (R1 + R2);      // Elektrische netwerken ftw :P
 
-const float minVoltage = 2.4;               // minimum battery voltage
-const float maxVoltage = 3.27;              // voltage of fully charged battery
+const float minVoltage = 2.0;               // minimum battery voltage
+const float maxVoltage = 6.5;               // voltage of fully charged battery
 
-// function prototypes
+#include <WebSocketsServer.h>
+
+// function prototype
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght);
 
 #include "Images/moon1.h" // include some XBM images
@@ -44,8 +44,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 #include "Commands.h" // HEX codes of the IR remote
 
-#define NB_OF_COMMANDS 9
+#define NB_OF_COMMANDS 9 // commands to send to the ATmega
 const uint8_t commands[NB_OF_COMMANDS] = { FORWARD, BACKWARD, LEFT, RIGHT, BRAKE, SPEEDUP, SPEEDDOWN, CHG_STATION, MANUAL};
+
+/*__________________________________________________________SETUP__________________________________________________________*/
 
 void setup() {
   DEBUG_Serial.begin(115200);        // Start the Serial communication to send messages to the computer
@@ -69,19 +71,16 @@ void setup() {
 
   startServer();               // Start a HTTP server with a file read handler and an upload handler
 
-  startUDP();
+  startUDP();                  // Start listening for UDP packets
 }
 
-unsigned long refresh = 50;
-unsigned long nextRefresh = millis();
+/*__________________________________________________________LOOP__________________________________________________________*/
 
-unsigned long interval = 2000;
-unsigned long nextInterval = millis();
+unsigned long refresh = 50; // refresh rate of the OLED display, value in milliseconds
+unsigned long nextRefresh = millis();
 
 int lights = 0;
 int movement = 0;
-
-String UDPdata = "0";
 
 void loop() {
   ArduinoOTA.handle();                        // check for over the air updates
@@ -90,50 +89,14 @@ void loop() {
   dnsServer.processNextRequest();             // process DNS requests
 
   if (millis() > nextRefresh) {
-    display.clear(); // clear the frame buffer
-
-    display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");
-
-    float voltage = analogRead(A0) / ResRatio / 1024.0;
-    int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage)); // convert voltage to battery level
-    drawBattery(0, 1, batLevel); // show the battery level in the top bar
-
-    if (WiFi.softAPgetStationNum() > 0 || WiFi.status() == WL_CONNECTED) { // If there are stations connected to the access point
-      display.drawXbm(106, 1, 11, 9, wifi_bits[3]); // Show the Wi-Fi icon in the top bar
-      display.drawString(122, 0, String(WiFi.softAPgetStationNum()));
-    }
-
-    if (lights == 0) // if the lights are off
-      display.drawXbm(20, 1, 9, 9, moon1_bits); // show a moon symbol in the top bar
-    else if (lights == 1) // if the lights are on
-      display.drawXbm(20, 1, 9, 9, sun_bits); // show a sun symbol in the top bar
-    else // if the lights are in automatic mode
-      display.drawString(20 + 4, 0, "A"); // show the letter A in the top bar
-
-    //display.drawString(1 * DISPLAY_WIDTH / 4, 32, UDPdata);
-
-     if (movement < 4)
-       drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement); // show an arrow indicating the direction of the movement
-     else
-       display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits); // Indicate that the wheelchair is navigating on autopilot
-
-    drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, voltage / maxVoltage, 27); // draw the speedometer (based on the voltage level)
-    display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(voltage)); // draw the number under the speed gauge
-
-    display.display(); // send the frame buffer to the display
-    nextRefresh = millis() + refresh;
+    drawAll();
   }
 
-  if (millis() > nextInterval) { // increment some of the variables to test the different states and symbols
-    //lights += 1;
-    //lights %= 3;
-    //movement += 1;
-    //movement %= 8;
-    nextInterval = millis() + interval;
-  }
   checkUDP();
   printIP();
 }
+
+/*__________________________________________________________WEBSOCKET__________________________________________________________*/
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
   switch (type) {
@@ -147,67 +110,106 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       break;
     case WStype_TEXT:                     // if new text data is received
       DEBUG_Serial.printf("[%u] get Text: %s: \t", num, payload);
-      int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS;
+      int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS; // convert from HEX string to number
       DEBUG_Serial.println(commands[index], HEX);
       ATMEGA_Serial.write(commands[index] | (1 << 7));
-      switch(commands[index]) {
-       case FORWARD:
-         movement = 0;
-         break;
-       case LEFT:
-         movement = 1;
-         break;
-       case BACKWARD:
-         movement = 2;
-         break;
-       case RIGHT:
-         movement = 3;
-         break;
-       default:
-         movement = 4;
-         break;
-     }
+      switch (commands[index]) {
+        case FORWARD:
+          movement = 0;
+          break;
+        case LEFT:
+          movement = 1;
+          break;
+        case BACKWARD:
+          movement = 2;
+          break;
+        case RIGHT:
+          movement = 3;
+          break;
+        default:
+          movement = 4;
+          break;
+      }
       break;
   }
 }
 
+/*__________________________________________________________UDP__________________________________________________________*/
+
 void checkUDP() {
-  unsigned int udpSize =  udp.parsePacket();
-  if(udpSize > 0) {
+  unsigned int udpSize =  udp.parsePacket(); // Load the contents of the UDP packet into the buffer
+  if (udpSize > 0) { // if there's new bytes available:
     lights += 1;
     lights %= 3;
     uint8_t data[1];
-    udp.read(data,1);
-    //UDPdata = String(data[0], HEX);
-     switch(data[0]) {
-       case FORWARD:
-         movement = 0;
-         break;
-       case LEFT:
-         movement = 1;
-         break;
-       case BACKWARD:
-         movement = 2;
-         break;
-       case RIGHT:
-         movement = 3;
-         break;
-       default:
-         movement = 4;
-         break;
-     }
+    udp.read(data, 1); // read 1 byte from the buffer
+    switch (commands[data[0]]) {
+      case FORWARD:
+        movement = 0;
+        break;
+      case LEFT:
+        movement = 1;
+        break;
+      case BACKWARD:
+        movement = 2;
+        break;
+      case RIGHT:
+        movement = 3;
+        break;
+      default:
+        movement = 4;
+        break;
+    }
   }
 }
 
+/*__________________________________________________________DISPLAY__________________________________________________________*/
+
+void drawAll() {
+  display.clear(); // clear the frame buffer
+
+  display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");                              // Print "HAL 9310" in the center of the top bar
+
+  float voltage = analogRead(A0) / ResRatio / 1024.0;                                // measure the voltage of the battery
+  int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage));    // convert voltage to battery level
+  drawBattery(0, 1, batLevel);                                                       // show the battery level in the top bar
+
+  if (WiFi.softAPgetStationNum() > 0 || WiFi.status() == WL_CONNECTED) {             // If there are stations connected to the access point
+    display.drawXbm(106, 1, 11, 9, wifi_bits[3]);                                      // Show the Wi-Fi icon in the top bar
+    display.drawString(122, 0, String(WiFi.softAPgetStationNum()));                    // print the number of stations that are connected directly to the ESP's AP
+  }
+
+  if (lights == 0)                                                                   // if the lights are off
+    display.drawXbm(20, 1, 9, 9, moon1_bits);                                          // show a moon symbol in the top bar
+  else if (lights == 1)                                                              // if the lights are on
+    display.drawXbm(20, 1, 9, 9, sun_bits);                                            // show a sun symbol in the top bar
+  else                                                                               // if the lights are in automatic mode
+    display.drawString(20 + 4, 0, "A");                                                // show the letter A in the top bar
+
+  if (movement < 4)
+    drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement);              // show an arrow indicating the direction of the movement
+  else
+    display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits);                      // Indicate that the wheelchair is navigating on autopilot
+
+  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, voltage / maxVoltage, 27); // draw the speedometer (based on the voltage level)
+  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(voltage));     // draw the number under the speed gauge
+
+  display.display(); // send the frame buffer to the display
+  nextRefresh = millis() + refresh;
+}
+
+/*__________________________________________________________MISC__________________________________________________________*/
+
 void printIP() {
   static boolean printed = false;
-  if(printed)
-    return;
   if (WiFi.status() == WL_CONNECTED) {
+    if (printed)
+      return;
     DEBUG_Serial.println("Connected");
     DEBUG_Serial.print("IP address:\t");
     DEBUG_Serial.println(WiFi.localIP());
     printed = true;
+  } else {
+    printed = false;
   }
 }
-
