@@ -1,5 +1,4 @@
-#define TEST
-#define DEBUG
+#define TEST // gebruik knoppen ipv lijnvolgsensoren
 
 #define GROUND 0
 #define TAPE 1
@@ -18,28 +17,28 @@ const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
 
 class Drive {
   public:
-    Drive(uint8_t dirL, uint8_t dirR, uint8_t en1, uint8_t en2, uint8_t lftSns, uint8_t rgtSns, uint8_t IRfollow, uint8_t buz = 255) : _dir_L(dirL), _dir_R(dirR), _en_L(en1), _en_R(en2), _leftSens(lftSns), _rightSens(rgtSns), _IRfollow(IRfollow), _buzzer(buz) {
-      pinMode(_dir_L, OUTPUT);
-      pinMode(_dir_R, OUTPUT);
-      pinMode(_en_L, OUTPUT);
-      pinMode(_en_R, OUTPUT);
+    Drive(uint8_t lftSns, uint8_t rgtSns, uint8_t IRfollow, uint8_t buz = 255) : _leftSens(lftSns), _rightSens(rgtSns), _IRfollow(IRfollow), _buzzer(buz) {
+      pinMode(DIRECTION_L, OUTPUT);
+      pinMode(DIRECTION_R, OUTPUT);
+      pinMode(SPEED_L, OUTPUT);
+      pinMode(SPEED_R, OUTPUT);
       pinMode(_buzzer, OUTPUT);
-      digitalWrite(_dir_L, LOW);
-      digitalWrite(_dir_R, LOW);
-      digitalWrite(_en_L, LOW);
-      digitalWrite(_en_R, LOW);
+      digitalWrite(DIRECTION_L, LOW);
+      digitalWrite(DIRECTION_R, LOW);
+      digitalWrite(SPEED_L, LOW);
+      digitalWrite(SPEED_R, LOW);
       digitalWrite(_buzzer, LOW);
     }
     ~Drive() {
-      pinMode(_dir_L, INPUT);
-      pinMode(_dir_R, INPUT);
-      pinMode(_en_L, INPUT);
-      pinMode(_en_R, INPUT);
+      pinMode(DIRECTION_L, INPUT);
+      pinMode(DIRECTION_R, INPUT);
+      pinMode(SPEED_L, INPUT);
+      pinMode(SPEED_R, INPUT);
       pinMode(_buzzer, INPUT);
-      digitalWrite(_dir_L, LOW);
-      digitalWrite(_dir_R, LOW);
-      digitalWrite(_en_L, LOW);
-      digitalWrite(_en_R, LOW);
+      digitalWrite(DIRECTION_L, LOW);
+      digitalWrite(DIRECTION_R, LOW);
+      digitalWrite(SPEED_L, LOW);
+      digitalWrite(SPEED_R, LOW);
       digitalWrite(_buzzer, LOW);
     }
     void checkIR(uint16_t cmd) {
@@ -109,7 +108,7 @@ class Drive {
       return _speed;
     }
   private:
-    uint8_t _dir_L, _dir_R, _en_L, _en_R, _speed, _leftSens, _rightSens, _IRfollow, _buzzer;
+    uint8_t _speed, _leftSens, _rightSens, _IRfollow, _buzzer;
     unsigned long _lastDriveCmd;
     unsigned long _lastSpdUpCmd;
     unsigned long _lastSpdDwnCmd;
@@ -121,62 +120,76 @@ class Drive {
     boolean _foundLine = false;
     
     void fwd() {
+#ifdef DEBUG
       Serial.println("forward");
-      digitalWrite(_dir_L, LOW); // Set the direction of both motors to forward
-      digitalWrite(_dir_R, LOW);
-      analogWrite(_en_L, SPEED_LEVELS[_speed]);
-      analogWrite(_en_R, SPEED_LEVELS[_speed]);
+#endif
+      digitalWrite(DIRECTION_L, LOW); // Set the direction of both motors to forward
+      digitalWrite(DIRECTION_R, LOW);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
       _lastDriveCmd = millis();
       _braked = false;
     }
     void bwd() {
+#ifdef DEBUG
       Serial.println("backward");
-      digitalWrite(_dir_L, HIGH); // Set the direction of both motors to backward
-      digitalWrite(_dir_R, HIGH);
-      analogWrite(_en_L, SPEED_LEVELS[_speed]);
-      analogWrite(_en_R, SPEED_LEVELS[_speed]);
+#endif
+      digitalWrite(DIRECTION_L, HIGH); // Set the direction of both motors to backward
+      digitalWrite(DIRECTION_R, HIGH);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
       _lastDriveCmd = millis();
       _braked = false;
     }
     void lft() {
+#ifdef DEBUG
       Serial.println("left");
-      digitalWrite(_dir_L, HIGH); // Set the direction of the left motor to backward
-      digitalWrite(_dir_R, LOW);
-      analogWrite(_en_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      analogWrite(_en_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+#endif
+      digitalWrite(DIRECTION_L, HIGH); // Set the direction of the left motor to backward
+      digitalWrite(DIRECTION_R, LOW);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       _lastDriveCmd = millis();
       _braked = false;
     }
     void rgt() {
+#ifdef DEBUG
       Serial.println("right");
-      digitalWrite(_dir_L, LOW); // Set the direction of the right motor to backward
-      digitalWrite(_dir_R, HIGH);
-      analogWrite(_en_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      analogWrite(_en_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+#endif
+      digitalWrite(DIRECTION_L, LOW); // Set the direction of the right motor to backward
+      digitalWrite(DIRECTION_R, HIGH);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       _lastDriveCmd = millis();
       _braked = false;
     }
     void brk() {
+#ifdef DEBUG
       Serial.println("brake");
-      digitalWrite(_en_L, 0);
-      digitalWrite(_en_R, 0);
+#endif
+      digitalWrite(SPEED_L, 0);
+      digitalWrite(SPEED_R, 0);
       _braked = true;
     }
     void lftFwd() {
+#ifdef DEBUG
       Serial.println("left forward");
-      digitalWrite(_dir_L, LOW); // Set the direction of the both motors to forward
-      digitalWrite(_dir_R, LOW);
-      analogWrite(_en_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      analogWrite(_en_R, SPEED_LEVELS[_speed]);
+#endif
+      digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
+      digitalWrite(DIRECTION_R, LOW);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
       _lastDriveCmd = millis();
       _braked = false;
     }
     void rgtFwd() {
+#ifdef DEBUG
       Serial.println("right forward");
-      digitalWrite(_dir_L, LOW); // Set the direction of the both motors to forward
-      digitalWrite(_dir_R, LOW);
-      analogWrite(_en_L, SPEED_LEVELS[_speed]);
-      analogWrite(_en_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+#endif
+      digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
+      digitalWrite(DIRECTION_R, LOW);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       _lastDriveCmd = millis();
       _braked = false;
     }
@@ -190,8 +203,10 @@ class Drive {
         }
         _lastSpdUpCmd = millis();
       }
+#ifdef DEBUG
       Serial.print("Speed:\t");
       Serial.println(_speed);
+#endif
     }
     void speeddown() {
       if (millis() > (_lastSpdDwnCmd + speed_timeout)) {
@@ -203,8 +218,10 @@ class Drive {
         }
         _lastSpdDwnCmd = millis();
       }
+#ifdef DEBUG
       Serial.print("Speed:\t");
       Serial.println(_speed);
+#endif
     }
 
     void biep(unsigned long len) {
@@ -248,8 +265,8 @@ class Drive {
       } else if (getLeftColor() == TAPE && getRightColor() == TAPE) {
         // _charging = true;
         brk();
-        digitalWrite(_dir_L, LOW);
-        digitalWrite(_dir_R, LOW);
+        digitalWrite(DIRECTION_L, LOW);
+        digitalWrite(DIRECTION_R, LOW);
 #ifdef DEBUG
         Serial.println("Reached charging station");
 #endif
