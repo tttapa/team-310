@@ -39,7 +39,7 @@ void startWebSocket() { // Start a WebSocket server
 
 void startServer() { // Start a HTTP server with a file read handler and an upload handler
   server.on("/edit.html",  HTTP_POST, []() {  // If a POST request is sent to the /edit.html address,
-    server.send(200, "text/plain", ""); 
+    server.send(200); 
   }, handleFileUpload);                       // go to 'handleFileUpload'
 
   server.onNotFound(handleNotFound);          // if someone requests any other file or page, go to function 'handleNotFound'
@@ -53,7 +53,8 @@ void startServer() { // Start a HTTP server with a file read handler and an uplo
 
 void handleNotFound(){ // if the requested file or page doesn't exist, return a 404 not found error
   if(locked) {
-    server.send(500, "text/plain", "Temporarilly unavailable"); // TODO: use correct HTTP status code
+    server.sendHeader("Retry-After","1");
+    server.send(503, "text/plain", "503: Service Unavailable"); // TODO: use correct HTTP status code
     return;
   }
   if(!handleFileRead(server.uri())){          // check if the file exists in the flash memory (SPIFFS), if so, send it
