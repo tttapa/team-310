@@ -206,10 +206,7 @@ void drawAll() {
 
 void printIP() {
   static boolean printed = false;
-  //Serial.println(printed?"Printed" : "Not printed");
-  Serial.println(WiFi.status());
   if (WiFi.status() != WL_DISCONNECTED) {
-    Serial.println("Conn");
     if (printed)
       return;
     DEBUG_Serial.println("Connected");
