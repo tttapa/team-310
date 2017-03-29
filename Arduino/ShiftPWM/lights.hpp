@@ -89,7 +89,7 @@ class Lights {
       }
     }
     void refresh(uint8_t speed) {
-      printColor(_color);
+      //printColor(_color);
       _hueDelay = 20 / (speed + 1);
       if ( millis() > _next) {
         if (_auto) {

@@ -1,9 +1,11 @@
-#define DEBUG_Serial Serial1  // Use Serial1 for debugging, and Serial for communication with the ATmega
+#define DEBUG_Serial Serial  // Use Serial1 for debugging, and Serial for communication with the ATmega
 #define ATMEGA_Serial Serial
 
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
 //#define FLIP // flip the OLED display upside down
+
+#include <ESP8266WiFi.h>
 
 const char *APssid         = "HAL 9310";
 const char *APpassword     = "pieter2001";
@@ -21,9 +23,10 @@ const unsigned int localPort = 9310;        // local port to listen for UDP pack
 const char *OTAName = "HAL 9310";           // A name and a password for the OTA service, to upload new firmware
 const char *OTAPassword = "esp8266";
 
-const float R1 = 71000;                     // values of the voltage divider to measure the battery voltage
-const float R2 = 9450;
+const float R1 = 68100;                     // values of the voltage divider to measure the battery voltage
+const float R2 = 9900;
 const float ResRatio = R2 / (R1 + R2);      // Elektrische netwerken ftw :P
+const float voltageCalib = 1.08;            // Analog input voltage differs from actual voltage
 
 const float minVoltage = 2.0;               // minimum battery voltage
 const float maxVoltage = 6.5;               // voltage of fully charged battery
@@ -94,6 +97,7 @@ void loop() {
 
   checkUDP();
   printIP();
+  delay(5);
 }
 
 /*__________________________________________________________WEBSOCKET__________________________________________________________*/
@@ -170,7 +174,7 @@ void drawAll() {
 
   display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");                              // Print "HAL 9310" in the center of the top bar
 
-  float voltage = analogRead(A0) / ResRatio / 1024.0;                                // measure the voltage of the battery
+  float voltage = analogRead(A0) * voltageCalib / ResRatio / 1024.0;                 // measure the voltage of the battery
   int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage));    // convert voltage to battery level
   drawBattery(0, 1, batLevel);                                                       // show the battery level in the top bar
 
@@ -202,12 +206,16 @@ void drawAll() {
 
 void printIP() {
   static boolean printed = false;
-  if (WiFi.status() == WL_CONNECTED) {
+  //Serial.println(printed?"Printed" : "Not printed");
+  Serial.println(WiFi.status());
+  if (WiFi.status() != WL_DISCONNECTED) {
+    Serial.println("Conn");
     if (printed)
       return;
     DEBUG_Serial.println("Connected");
     DEBUG_Serial.print("IP address:\t");
     DEBUG_Serial.println(WiFi.localIP());
+    startMDNS();
     printed = true;
   } else {
     printed = false;

@@ -43,7 +43,7 @@ void setup() {
   My_Decoder.UseExtnBuf(Buffer);
 
   pinMode(SPEED_SENSE, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(SPEED_SENSE), checkSpeed, FALLING);
+  attachInterrupt(digitalPinToInterrupt(SPEED_SENSE), checkSpeed, RISING);
 }
 
 #ifdef WIFI
@@ -92,11 +92,14 @@ void loop() {
       maxSpeed = speed;
     }
   }
-  //Serial.println(maxSpeed);
+  Serial.println(maxSpeed);
 }
 
 void checkSpeed() {
   static unsigned long prev = micros();
-  speed = micros() - prev;
+  unsigned long tmp = micros() - prev;
+  if(tmp > 5000){
+    speed = tmp;
+  }
   prev = micros();
 }

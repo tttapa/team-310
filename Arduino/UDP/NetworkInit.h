@@ -12,11 +12,11 @@ boolean reset();
 
 void startWiFi() {
   WiFi.hostname(WiFiHostname);
-#ifdef STATION
-  WiFi.mode(WIFI_AP_STA);
-#else
-  WiFi.mode(WIFI_AP);
-#endif
+//#ifdef STATION
+//  WiFi.mode(WIFI_AP_STA);
+//#else
+//  WiFi.mode(WIFI_AP);
+//#endif
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
   WiFi.softAP(APssid, APpassword) || reset();             // Start the access point
   DEBUG_Serial.print("Access Point \"");
@@ -50,9 +50,12 @@ void startWiFi() {
       i++;
       i %= 4;
       nextWiFiFrame = millis() + frameTime;
+
+      Serial.println(WiFi.status());
     }
     yield();
   }
+  delay(50);
 #endif
 }
 
@@ -98,8 +101,17 @@ void startOTA() { // start the Over The Air update services
 }
 
 void startMDNS() { // Start the mDNS responder
-  DEBUG_Serial.println("Starting mDNS responder ...");
-  MDNS.begin(dnsName) || reset();                        // start the multicast domain name server
+  DEBUG_Serial.println("Starting mDNS responder for AP ...");
+//#ifdef STATION
+//  WiFi.mode(WIFI_AP);
+//#endif
+  MDNS.begin(dnsName, WiFi.softAPIP()) || reset();                        // start the multicast domain name server
+//#ifdef STATION
+//  WiFi.mode(WIFI_AP_STA);
+//#endif
+  DEBUG_Serial.println("Starting mDNS responder for STA ...");
+  if (WiFi.status() == WL_CONNECTED)
+    MDNS.begin(dnsName) || reset();
   DEBUG_Serial.print("mDNS responder started: http://");
   DEBUG_Serial.print(dnsName);
   DEBUG_Serial.println(".local");
@@ -121,6 +133,7 @@ void startUDP() {
 boolean reset() {
   display.clear();
   display.setFont(ArialMT_Plain_16);
+  display.setTextAlignment(TEXT_ALIGN_CENTER_BOTH);
   display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, "Fatal error :(");
   display.display();
   DEBUG_Serial.println("Failed.\r\nRebooting ...");
