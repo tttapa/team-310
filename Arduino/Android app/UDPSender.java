@@ -21,8 +21,8 @@ class UDPSender {
     String host;
     boolean running;
     int sendingInterval;
-    private String data;
-    void send(final String dat) {
+    private int data;
+    void send(final int dat) {
         //inserting data in class
         this.data = dat;
 
@@ -69,9 +69,13 @@ class UDPSender {
             //int port = 90;
 
 
-            byte[] message = data.getBytes();
+            byte[] message = {(byte)data};
 
-            System.out.println("/////////////////" + "\n" + "data: " + data + "\n" + "byte message: " + message);
+            System.out.print("/////////////////" + "\n" + "data: " + data + "\n" + "byte message: ");
+            for(int i = 0; i< message.length; i++) {
+                System.out.print(message[i]+" ");
+            }
+            System.out.println();
             //System.out.println("///////packet sender");
 
             //internet address

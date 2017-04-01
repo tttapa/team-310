@@ -26,9 +26,9 @@ public class MainActivity extends AppCompatActivity {
 ///////////////packet sending configuration////////////////////////////
 //////////////////////////////////////////////////////////////////////
         final UDPSender sender = new UDPSender();
-        sender.host = "localhost";
+        sender.host = "www.google.com";
         sender.port = 80;
-        sender.sendingInterval = 2;
+        sender.sendingInterval = 100;
 
 
 /////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 /////////////////////////////////////////////////////////////////////
 ///////////////////MOTION BUTTONS////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
-/////------------------------UP-------------------------------//////
+/////------------------------FORWARD-------------------------------//////
         final Button UpButton = (Button) findViewById(R.id.Up);
 
         UpButton.setOnTouchListener(new View.OnTouchListener() {
@@ -49,16 +49,16 @@ public class MainActivity extends AppCompatActivity {
                 int action = event.getAction();
 
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
-                    sendingMotion = "up";
+                    sendingMotion = "forward";
                     //System.out.println("Button down");
                     sender.running = true;
                     UpButton.setTextColor(Color.BLACK);
                     UpButton.setBackgroundColor(Color.parseColor(pressColor));
                     //TODO: need to set specific data for "up" to send
-                    sender.send("1"); // sending "up" to address defined at beginning
+                    sender.send(commands.FORWARD); // sending "up" to address defined at beginning
                     return true;
 
-                } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("up")) {
+                } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("forward")) {
                     //System.out.println("button up");
                     sendingMotion = "0";
                     sender.running = false;
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
                     sendingMotion = "down";
                     sender.running = true;
                     //TODO: need to set specific data for "down" to send
-                    //sender.send("down"); // sending "down" to address defined at beginning
+                    sender.send(commands.BACKWARD); // sending "down" to address defined at beginning
                     DownButton.setTextColor(Color.BLACK);
                     DownButton.setBackgroundColor(Color.parseColor(pressColor));
                     DownButton.setShadowLayer(20, 20, 20, Color.BLACK);
@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
                     sendingMotion = "left";
                     sender.running = true;
                     //TODO: need to set specific data for "left" to send
-                    //sender.send("left"); // sending "left" to address defined at beginning
+                    sender.send(commands.LEFT); // sending "left" to address defined at beginning
                     LeftButton.setTextColor(Color.BLACK);
                     LeftButton.setBackgroundColor(Color.parseColor(pressColor));
                     return true;
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
                     sendingMotion = "right";
                     sender.running = true;
                     //TODO: need to set specific data for "right" to send
-                    //sender.send("right"); // sending "right" to address defined at beginning
+                    sender.send(commands.RIGHT); // sending "right" to address defined at beginning
                     RightButton.setTextColor(Color.BLACK);
                     RightButton.setBackgroundColor(Color.parseColor(pressColor));
                     return true;
