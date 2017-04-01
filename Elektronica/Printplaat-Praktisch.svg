@@ -12,9 +12,9 @@
    version="1.1"
    id="svg29"
    xml:space="preserve"
-   width="453.5433"
+   width="396.505"
    height="321.25986"
-   viewBox="0 0 453.5433 321.25986"
+   viewBox="0 0 396.505 321.25986"
    sodipodi:docname="Printplaat-Praktisch.svg"
    inkscape:version="0.92.1 unknown"><metadata
      id="metadata35"><rdf:RDF><cc:Work
@@ -97,7 +97,7 @@
      id="namedview31"
      showgrid="false"
      inkscape:zoom="2.0117534"
-     inkscape:cx="161.70397"
+     inkscape:cx="181.34066"
      inkscape:cy="127.61248"
      inkscape:window-x="992"
      inkscape:window-y="24"
@@ -4141,11 +4141,11 @@
          y="-164.27225"
          style="font-size:6px;stroke-width:0.75">E4</tspan></text>
 <path
-       style="fill:none;stroke:#000000;stroke-width:0.1875;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:0.1875;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 62.760998,179.45649 V 169.37318"
        id="path2162"
        inkscape:connector-curvature="0" /><path
-       style="fill:none;stroke:#000000;stroke-width:0.1875;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:0.1875;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 62.872382,196.29496 V 186.21165"
        id="path2162-1"
        inkscape:connector-curvature="0" /><text
@@ -4641,7 +4641,7 @@
        id="path5833"
        inkscape:connector-curvature="0"
        transform="matrix(0.75000002,0,0,-0.75000002,0,240.94489)" /><rect
-       style="fill:none;stroke:#005be2;stroke-width:0.82500002;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:none;stroke:#005be2;stroke-width:0.82500005;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect5835"
        width="28.60232"
        height="67.881081"
@@ -4700,7 +4700,7 @@
          id="tspan1892-62-1"
          x="52.867199"
          y="-144.90891"
-         style="font-size:5.00000013px;stroke-width:0.75">A1</tspan></text>
+         style="font-size:5px;stroke-width:0.75">A1</tspan></text>
 <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:30px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
@@ -4728,7 +4728,7 @@
          id="tspan1892-62-1-9"
          x="45.943066"
          y="-144.9339"
-         style="font-size:5.00000013px;stroke-width:0.75">A2</tspan></text>
+         style="font-size:5px;stroke-width:0.75">A2</tspan></text>
 <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:4px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.75"
@@ -4755,7 +4755,7 @@
          style="font-size:6px;stroke-width:0.75">3.3V LDO</tspan></text>
 <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:4px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#40a4ff;fill-opacity:1;stroke:none;stroke-width:0.75;"
+       style="font-style:normal;font-weight:normal;font-size:4px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#40a4ff;fill-opacity:1;stroke:none;stroke-width:0.75"
        x="57.336449"
        y="-181.89493"
        id="text5956"
@@ -4764,7 +4764,7 @@
          id="tspan5954"
          x="57.336449"
          y="-181.89493"
-         style="fill:#40a4ff;stroke-width:0.75;fill-opacity:1;">OLED</tspan></text>
+         style="fill:#40a4ff;fill-opacity:1;stroke-width:0.75">OLED</tspan></text>
 <path
        style="fill:#ffff00;stroke:#ffffff;stroke-width:0.38663658;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 331.25409,273.33518 v -2.98764 h 2.8119 2.8119 v 2.98764 2.98765 h -2.8119 -2.8119 z"
@@ -5040,7 +5040,7 @@
          id="tspan1892-3-1"
          x="65.704468"
          y="-105.99807"
-         style="font-size:5px;stroke-width:0.75">AE</tspan></text>
+         style="font-size:5px;stroke-width:0.75">EA</tspan></text>
 <g
        id="g6192"
        transform="translate(-0.19771189,-0.26361585)"><rect
@@ -5058,7 +5058,7 @@
          width="3.9144864"
          id="rect6188"
          style="fill:#cccccc;fill-opacity:1;stroke:none;stroke-width:0.83029896;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" /></g><path
-       style="fill:none;stroke:#000000;stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0.47"
+       style="fill:none;stroke:#000000;stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0.47000002"
        d="m 165.68256,164.89171 -8.04028,4.34966 v 0"
        id="path6194"
        inkscape:connector-curvature="0" /><path
