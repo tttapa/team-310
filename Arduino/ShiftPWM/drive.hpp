@@ -17,29 +17,29 @@ const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
 
 class Drive {
   public:
-    Drive(uint8_t lftSns, uint8_t rgtSns, uint8_t IRfollow, uint8_t buz = 255) : _leftSens(lftSns), _rightSens(rgtSns), _IRfollow(IRfollow), _buzzer(buz) {
+    Drive() {
       pinMode(DIRECTION_L, OUTPUT);
       pinMode(DIRECTION_R, OUTPUT);
       pinMode(SPEED_L, OUTPUT);
       pinMode(SPEED_R, OUTPUT);
-      pinMode(_buzzer, OUTPUT);
+      pinMode(BUZZER, OUTPUT);
       digitalWrite(DIRECTION_L, LOW);
       digitalWrite(DIRECTION_R, LOW);
       digitalWrite(SPEED_L, LOW);
       digitalWrite(SPEED_R, LOW);
-      digitalWrite(_buzzer, LOW);
+      digitalWrite(BUZZER, LOW);
     }
     ~Drive() {
       pinMode(DIRECTION_L, INPUT);
       pinMode(DIRECTION_R, INPUT);
       pinMode(SPEED_L, INPUT);
       pinMode(SPEED_R, INPUT);
-      pinMode(_buzzer, INPUT);
+      pinMode(BUZZER, INPUT);
       digitalWrite(DIRECTION_L, LOW);
       digitalWrite(DIRECTION_R, LOW);
       digitalWrite(SPEED_L, LOW);
       digitalWrite(SPEED_R, LOW);
-      digitalWrite(_buzzer, LOW);
+      digitalWrite(BUZZER, LOW);
     }
     void checkIR(uint16_t cmd) {
       cmd &= 0xFF;
@@ -108,7 +108,7 @@ class Drive {
       return _speed;
     }
   private:
-    uint8_t _speed, _leftSens, _rightSens, _IRfollow, _buzzer;
+    uint8_t _speed, LINE_LEFT, LINE_RIGHT, LINE_LED, BUZZER;
     unsigned long _lastDriveCmd;
     unsigned long _lastSpdUpCmd;
     unsigned long _lastSpdDwnCmd;
@@ -225,14 +225,14 @@ class Drive {
     }
 
     void biep(unsigned long len) {
-      if (_buzzer != 255) {
-        digitalWrite(_buzzer, HIGH);
+      if (BUZZER != 255) {
+        digitalWrite(BUZZER, HIGH);
         _biepEnd = millis() + len;
       }
     }
     void biepOff() {
-      if (_buzzer != 255) {
-        digitalWrite(_buzzer, LOW);
+      if (BUZZER != 255) {
+        digitalWrite(BUZZER, LOW);
       }
     }
 
@@ -270,21 +270,21 @@ class Drive {
 #ifdef DEBUG
         Serial.println("Reached charging station");
 #endif
-        digitalWrite(_buzzer, HIGH);
+        digitalWrite(BUZZER, HIGH);
         delay(200);
-        digitalWrite(_buzzer, LOW);
+        digitalWrite(BUZZER, LOW);
         delay(200);
-        digitalWrite(_buzzer, HIGH);
+        digitalWrite(BUZZER, HIGH);
         delay(200);
-        digitalWrite(_buzzer, LOW);
+        digitalWrite(BUZZER, LOW);
         delay(200);
-        digitalWrite(_buzzer, HIGH);
+        digitalWrite(BUZZER, HIGH);
         delay(200);
-        digitalWrite(_buzzer, LOW);
+        digitalWrite(BUZZER, LOW);
         delay(200);
-        digitalWrite(_buzzer, HIGH);
+        digitalWrite(BUZZER, HIGH);
         delay(600);
-        digitalWrite(_buzzer, LOW);
+        digitalWrite(BUZZER, LOW);
         _auto = false;
         _foundRight = false;
         _foundLeft = false;
@@ -295,7 +295,7 @@ class Drive {
     }
 
     boolean getLeftColor() {
-      if (ambientReflectionDiff(_leftSens) > darkThreshold) {
+      if (ambientReflectionDiff(LINE_LEFT) > darkThreshold) {
         return DARK;
       } else {
         return LIGHT;
@@ -303,7 +303,7 @@ class Drive {
     }
 
     boolean getRightColor() {
-      if (ambientReflectionDiff(_rightSens) > darkThreshold) {
+      if (ambientReflectionDiff(LINE_RIGHT) > darkThreshold) {
         return DARK;
       } else {
         return LIGHT;
@@ -314,10 +314,10 @@ class Drive {
       return 1023 - 1023*digitalRead(pin);
 #else
       int amb = analogRead(pin);
-      digitalWrite(_IRfollow, HIGH);
+      digitalWrite(LINE_LED, HIGH);
       delay(1);
       int refl = analogRead(pin);
-      digitalWrite(_IRfollow, LOW);
+      digitalWrite(LINE_LED, LOW);
       delay(1);
 #endif
     }

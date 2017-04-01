@@ -1,5 +1,5 @@
 #define DVD // use the DVD setting on the remote
-#define WIFI // use Serial connection to Wi-Fi chip
+//#define WIFI // use Serial connection to Wi-Fi chip
 
 //#define DEBUG // print commands and other debug messages to the serial port
 
@@ -25,7 +25,7 @@ const uint8_t BUZZER = A3;
 #include "drive.hpp"
 #include "lights.hpp"
 
-Drive drive(LINE_LEFT, LINE_RIGHT, LINE_LED, BUZZER);
+Drive drive;
 Lights lights;
 
 IRrecv My_Receiver(IR_REMOTE);
