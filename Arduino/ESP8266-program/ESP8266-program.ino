@@ -13,15 +13,15 @@ const char *APpassword     = "pieter2001";
 #include "WiFiCredentials.h"
 #endif
 
-const char* WiFiHostname = "HAL-9310";      // Host name of the device
-const char* dnsName = "HAL-9310";           // Domain name for the mDNS responder
+const char* WiFiHostname = "hal-9310";      // Host name of the device
+const char* dnsName = "hal-9310";           // Domain name for the mDNS responder
 const byte DNS_PORT = 53;                   // The port of the DNS server
 IPAddress apIP(3, 1, 0, 1);                 // The IP address of the access point
 
 const unsigned int localPort = 9310;        // local port to listen for UDP packets
 
 const char *OTAName = "HAL 9310";           // A name and a password for the OTA service, to upload new firmware
-const char *OTAPassword = "esp8266";
+const char *OTAPassword = "espetss";
 
 const float R1 = 68100;                     // values of the voltage divider to measure the battery voltage
 const float R2 = 9900;
@@ -60,17 +60,15 @@ void setup() {
 
   startDisplay();              // initialise the display
 
+  startWiFi();                 // Start an access point, and connect to the network specified above
+
   startOTA();                  // start the Over The Air update services
 
-  startWiFi();                 // Start an access point, and connect to the network specified above
+  startDNS();                  // Start the DNS server
 
   startSPIFFS();               // Start the SPIFFS and list all contents
 
   startWebSocket();            // Start a WebSocket server
-
-  startMDNS();                 // Start the mDNS responder
-
-  startDNS();                  // Start the DNS server
 
   startServer();               // Start a HTTP server with a file read handler and an upload handler
 
@@ -96,8 +94,9 @@ void loop() {
   }
 
   checkUDP();
+#ifdef STATION
   printIP();
-  delay(5);
+#endif
 }
 
 /*__________________________________________________________WEBSOCKET__________________________________________________________*/
@@ -169,6 +168,10 @@ void checkUDP() {
 
 /*__________________________________________________________DISPLAY__________________________________________________________*/
 
+int wififrame = 0;
+unsigned long nextWiFiFrame = millis();
+unsigned long frameTime = 250;
+
 void drawAll() {
   display.clear(); // clear the frame buffer
 
@@ -181,6 +184,13 @@ void drawAll() {
   if (WiFi.softAPgetStationNum() > 0 || WiFi.status() == WL_CONNECTED) {             // If there are stations connected to the access point
     display.drawXbm(106, 1, 11, 9, wifi_bits[3]);                                      // Show the Wi-Fi icon in the top bar
     display.drawString(122, 0, String(WiFi.softAPgetStationNum()));                    // print the number of stations that are connected directly to the ESP's AP
+  } else {                                                                           // Wi-Fi not connected
+    if (millis() > nextWiFiFrame) {
+      wififrame++;
+      wififrame %= 4;
+      nextWiFiFrame = millis() + frameTime;
+    }
+    display.drawXbm(106, 1, 11, 9, wifi_bits[wififrame]); // Show the Wi-Fi icon in the top bar
   }
 
   if (lights == 0)                                                                   // if the lights are off
@@ -204,9 +214,10 @@ void drawAll() {
 
 /*__________________________________________________________MISC__________________________________________________________*/
 
+#ifdef STATION
 void printIP() {
   static boolean printed = false;
-  if (WiFi.status() != WL_DISCONNECTED) {
+  if (WiFi.status() == WL_CONNECTED) {
     if (printed)
       return;
     DEBUG_Serial.println("Connected");
@@ -218,3 +229,4 @@ void printIP() {
     printed = false;
   }
 }
+#endif

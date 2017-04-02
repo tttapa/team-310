@@ -11,12 +11,12 @@ WiFiUDP udp;
 boolean reset();
 
 void startWiFi() {
-  //  WiFi.hostname(WiFiHostname);
-  //#ifdef STATION
-  //  WiFi.mode(WIFI_AP_STA);
-  //#else
-  //  WiFi.mode(WIFI_AP);
-  //#endif
+  WiFi.hostname(WiFiHostname);
+#ifdef STATION
+  WiFi.mode(WIFI_AP_STA);
+#else
+  WiFi.mode(WIFI_AP);
+#endif
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
   WiFi.softAP(APssid, APpassword) || reset();             // Start the access point
   DEBUG_Serial.print("Access Point \"");
@@ -26,34 +26,6 @@ void startWiFi() {
   WiFi.begin(ssid, password) || reset();            // Connect to the network
   DEBUG_Serial.print("Connecting to ");
   DEBUG_Serial.print(ssid); DEBUG_Serial.println(" ...");
-
-  int i = 0;
-  unsigned long nextWiFiFrame = millis();
-  unsigned long frameTime = 250;
-
-  while (WiFi.status() != WL_CONNECTED && WiFi.softAPgetStationNum() == 0) { // Wait for the Wi-Fi to connect
-    if (millis() > nextWiFiFrame) {
-      display.clear();
-
-      display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");
-
-      float voltage = analogRead(A0) / ResRatio / 1024.0;
-      int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage)); // convert voltage to battery level
-      drawBattery(0, 1, batLevel); // show the battery level in the top bar
-
-      display.setFont(ArialMT_Plain_16);
-      display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2 - 15, String("Connecting to\n") + String(ssid));
-      display.setFont(ArialMT_Plain_10);
-      display.drawXbm(106, 1, 11, 9, wifi_bits[i]); // Show the Wi-Fi icon in the top bar
-      display.display(); // send the frame buffer to the display
-
-      i++;
-      i %= 4;
-      nextWiFiFrame = millis() + frameTime;
-    }
-    yield();
-  }
-  delay(50);
 #endif
 }
 
@@ -99,21 +71,19 @@ void startOTA() { // start the Over The Air update services
 }
 
 void startMDNS() { // Start the mDNS responder
-#ifdef STATION
   DEBUG_Serial.println("Starting mDNS responder for STA ...");
   if (WiFi.status() != WL_CONNECTED)
     return;
   MDNS.begin(dnsName) || reset();
-#endif
   DEBUG_Serial.print("mDNS responder started: http://");
   DEBUG_Serial.print(dnsName);
   DEBUG_Serial.println(".local");
 }
 
 void startDNS() {
-  DEBUG_Serial.print("Starting DNS server");
+  DEBUG_Serial.println("Starting DNS server");
   dnsServer.start(DNS_PORT, String(dnsName) + ".kul", apIP) || reset();
-  DEBUG_Serial.println("DNS server started on http://" + String(dnsName) + ".kull");
+  DEBUG_Serial.println("DNS server started on http://" + String(dnsName) + ".kul");
 }
 
 void startUDP() {
