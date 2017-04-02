@@ -56,7 +56,6 @@ class UDPSender {
     private class Connection extends AsyncTask {
         @Override
         protected Object doInBackground(Object... arg0) {
-            //TODO: to be modified
             packetSend();
             return null;
         }
