@@ -9,6 +9,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import static android.widget.Toast.LENGTH_SHORT;
@@ -35,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         sender.host = "www.google.com";
         sender.port = 80;
         sender.sendingInterval = 90;
-
+        final int controlRepeat = 4; //extra sending to be sure the message arrives
 
 /////////////////////////////////////////////////////////////////////
 ////////////////////Color configuration//////////////////////////////
@@ -66,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
                     sender.running = true;
                     UpButton.setTextColor(Color.BLACK);
                     UpButton.setBackgroundColor(Color.parseColor(pressColor));
-                    sender.send(commands.FORWARD);
+                    sender.send(commands.FORWARD, true);
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("forward")) {
@@ -93,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "down";
                     sender.running = true;
-                    sender.send(commands.BACKWARD);
+                    sender.send(commands.BACKWARD, true);
                     DownButton.setTextColor(Color.BLACK);
                     DownButton.setBackgroundColor(Color.parseColor(pressColor));
                     DownButton.setShadowLayer(20, 20, 20, Color.BLACK);
@@ -122,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "left";
                     sender.running = true;
-                    sender.send(commands.LEFT);
+                    sender.send(commands.LEFT, true);
                     LeftButton.setTextColor(Color.BLACK);
                     LeftButton.setBackgroundColor(Color.parseColor(pressColor));
                     return true;
@@ -149,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "right";
                     sender.running = true;
-                    sender.send(commands.RIGHT);
+                    sender.send(commands.RIGHT, true);
                     RightButton.setTextColor(Color.BLACK);
                     RightButton.setBackgroundColor(Color.parseColor(pressColor));
                     return true;
@@ -175,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "su";
                     sender.running = true;
-                    sender.send(commands.SPEEDUP);
+                    sender.send(commands.SPEEDUP, false);
                     SuButton.setTextColor(Color.BLACK);
                     SuButton.setBackgroundColor(Color.parseColor(pressColor));
                     return true;
@@ -201,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "so";
                     sender.running = true;
-                    sender.send(commands.SPEEDDOWN);
+                    sender.send(commands.SPEEDDOWN, false);
                     SoButton.setTextColor(Color.BLACK);
                     SoButton.setBackgroundColor(Color.parseColor(pressColor));
                     return true;
@@ -230,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "red";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_RED); // sending LIGHTS_RED data to address defined at beginning
+                    sender.send(commands.LIGHTS_RED, false); // sending LIGHTS_RED data to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("red")) {
@@ -252,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "green";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_GREEN); // sending green data to address defined at beginning
+                    sender.send(commands.LIGHTS_GREEN, false); // sending green data to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("green")) {
@@ -274,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "yellow";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_YELLOW); // sending yellow to address defined at beginning
+                    sender.send(commands.LIGHTS_YELLOW, false); // sending yellow to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("yellow")) {
@@ -296,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "blue";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_BLUE); // sending blue data to address defined at beginning
+                    sender.send(commands.LIGHTS_BLUE, false); // sending blue data to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("blue")) {
@@ -318,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "rainbow";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_RAINBOW); // sending rainbow data to address defined at beginning
+                    sender.send(commands.LIGHTS_RAINBOW, false); // sending rainbow data to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("rainbow")) {
@@ -340,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "on";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_ON); // sending lights on data to address defined at beginning
+                    sender.send(commands.LIGHTS_ON, false); // sending lights on data to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("on")) {
@@ -362,7 +364,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "off";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_OFF); // sending lights off to address defined at beginning
+                    sender.send(commands.LIGHTS_OFF, false); // sending lights off to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("off")) {
@@ -384,7 +386,7 @@ public class MainActivity extends AppCompatActivity {
                 if (action == MotionEvent.ACTION_DOWN && sendingMotion.equals("0")) {
                     sendingMotion = "lights_auto";
                     sender.running = true;
-                    sender.send(commands.LIGHTS_AUTO); // sending lights auto to address defined at beginning
+                    sender.send(commands.LIGHTS_AUTO, false); // sending lights auto to address defined at beginning
                     return true;
 
                 } else if (action == MotionEvent.ACTION_UP && sendingMotion.equals("lights_auto")) {
@@ -398,6 +400,23 @@ public class MainActivity extends AppCompatActivity {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////AUTO DRIVING SECTION////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+        final Switch autoSwitch = (Switch) findViewById(R.id.switch1);
+
+        autoSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                System.out.println(isChecked);
+                if (isChecked) {
+                    for(int i=0; i < controlRepeat; i++) {
+                        sender.send(commands.CHG_STATION, false);
+                    }
+                } else {
+                    for(int i=0; i < controlRepeat; i++) {
+                        sender.send(commands.MANUAL, false);
+                    }
+                }
+            }
+        });
 
     }
 
