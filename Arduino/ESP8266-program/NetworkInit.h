@@ -71,7 +71,7 @@ void startOTA() { // start the Over The Air update services
 }
 
 void startMDNS() { // Start the mDNS responder
-  DEBUG_Serial.println("Starting mDNS responder for STA ...");
+  DEBUG_Serial.println("Starting mDNS responder ...");
   if (WiFi.status() != WL_CONNECTED)
     return;
   MDNS.begin(dnsName) || reset();

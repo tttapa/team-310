@@ -56,7 +56,7 @@ void setup() {
   DEBUG_Serial.begin(115200);        // Start the Serial communication to send messages to the computer
   ATMEGA_Serial.begin(115200);              // Start the Serial communication with the ATmega328P
   delay(10);
-  DEBUG_Serial.println("\r\nI read you, Dave.");
+  DEBUG_Serial.println("\r\n\r\nI read you, Dave.\r\n");
 
   startDisplay();              // initialise the display
 
@@ -97,6 +97,7 @@ void loop() {
 #ifdef STATION
   printIP();
 #endif
+  printStations();
 }
 
 /*__________________________________________________________WEBSOCKET__________________________________________________________*/
@@ -223,10 +224,20 @@ void printIP() {
     DEBUG_Serial.println("Connected");
     DEBUG_Serial.print("IP address:\t");
     DEBUG_Serial.println(WiFi.localIP());
-    startMDNS();
+    startMDNS();                 // Start the mDNS responder
+
     printed = true;
   } else {
     printed = false;
   }
 }
 #endif
+
+void printStations() {
+  static int prevNumber = 0;
+  if (WiFi.softAPgetStationNum() != prevNumber) {
+    prevNumber = WiFi.softAPgetStationNum();
+    DEBUG_Serial.print(prevNumber);
+    DEBUG_Serial.println(" station(s) connected");
+  }
+}
