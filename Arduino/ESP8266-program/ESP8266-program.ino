@@ -91,6 +91,7 @@ void loop() {
 
   if (millis() > nextRefresh) {
     drawAll();
+    //DEBUG_Serial.println(getQuality());
   }
 
   checkUDP();
@@ -181,10 +182,9 @@ void drawAll() {
   float voltage = analogRead(A0) * voltageCalib / ResRatio / 1024.0;                 // measure the voltage of the battery
   int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage));    // convert voltage to battery level
   drawBattery(0, 1, batLevel);                                                       // show the battery level in the top bar
-
-  if (WiFi.softAPgetStationNum() > 0 || WiFi.status() == WL_CONNECTED) {             // If there are stations connected to the access point
-    display.drawXbm(106, 1, 11, 9, wifi_bits[3]);                                      // Show the Wi-Fi icon in the top bar
-    display.drawString(122, 0, String(WiFi.softAPgetStationNum()));                    // print the number of stations that are connected directly to the ESP's AP
+#ifdef STATION
+  if (WiFi.status() == WL_CONNECTED) {                                               // If there are stations connected to the access point
+    display.drawXbm(106, 1, 11, 9, wifi_bits[round(3.0*getQuality()/100)%4]);          // Show the Wi-Fi icon in the top bar
   } else {                                                                           // Wi-Fi not connected
     if (millis() > nextWiFiFrame) {
       wififrame++;
@@ -193,6 +193,9 @@ void drawAll() {
     }
     display.drawXbm(106, 1, 11, 9, wifi_bits[wififrame]); // Show the Wi-Fi icon in the top bar
   }
+#endif
+  if (WiFi.softAPgetStationNum())
+      display.drawString(122, 0, String(WiFi.softAPgetStationNum()));                  // print the number of stations that are connected directly to the ESP's AP
 
   if (lights == 0)                                                                   // if the lights are off
     display.drawXbm(20, 1, 9, 9, moon1_bits);                                          // show a moon symbol in the top bar
@@ -206,8 +209,8 @@ void drawAll() {
   else
     display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits);                      // Indicate that the wheelchair is navigating on autopilot
 
-  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, voltage / maxVoltage, 27); // draw the speedometer (based on the voltage level)
-  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(voltage));     // draw the number under the speed gauge
+  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, getQuality()/100.0, 27); // draw the speedometer (based on the voltage level)
+  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(getQuality()));     // draw the number under the speed gauge
 
   display.display(); // send the frame buffer to the display
   nextRefresh = millis() + refresh;
@@ -241,3 +244,15 @@ void printStations() {
     DEBUG_Serial.println(" station(s) connected");
   }
 }
+
+int getQuality() {
+  if(WiFi.status() != WL_CONNECTED)
+    return 0;
+  int dBm = WiFi.RSSI();
+  if (dBm <= -100)
+    return 0;
+  if (dBm >= -50)
+    return 100;
+  return 2 * (dBm + 100);
+}
+
