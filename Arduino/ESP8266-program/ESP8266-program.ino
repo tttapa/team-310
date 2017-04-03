@@ -47,19 +47,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 
 #include "Commands.h" // HEX codes of the IR remote
 
-#define NB_OF_COMMANDS 9 // commands to send to the ATmega
-const uint8_t commands[NB_OF_COMMANDS] = { 
+#define NB_OF_COMMANDS 12 // commands to send to the ATmega
+const uint8_t commands[NB_OF_COMMANDS] = {
   FORWARD,     // 0
   BACKWARD,    // 1
   LEFT,        // 2
   RIGHT,       // 3
   BRAKE,       // 4
   SPEEDUP,     // 5
-  SPEEDDOWN,   // 6 
+  SPEEDDOWN,   // 6
   CHG_STATION, // 7
-  MANUAL       // 8
+  MANUAL,      // 8
+  LIGHTS_ON,   // 9
+  LIGHTS_OFF,  // 10
+  LIGHTS_AUTO  // 11
 }; // converts a number between 0 and NB_OF_COMMANDS-1 to the right command to send to the ATmega
-   // These numbers are sent by the webpage or Android app
+// These numbers are sent by the webpage or Android app
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -102,7 +105,6 @@ void loop() {
 
   if (millis() > nextRefresh) {
     drawAll();
-    //DEBUG_Serial.println(getQuality());
   }
 
   checkUDP();
@@ -129,7 +131,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS; // convert from HEX string to number
       DEBUG_Serial.println(commands[index], HEX);
       ATMEGA_Serial.write(commands[index] | (1 << 7));
-      switch (commands[index]) {
+      /*switch (commands[index]) {
         case FORWARD:
           movement = 0;
           break;
@@ -145,7 +147,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         default:
           movement = 4;
           break;
-      }
+      }*/
       break;
   }
 }
@@ -155,25 +157,40 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 void checkUDP() {
   unsigned int udpSize =  udp.parsePacket(); // Load the contents of the UDP packet into the buffer
   if (udpSize > 0) { // if there's new bytes available:
-    lights += 1;
-    lights %= 3;
     uint8_t data[1];
     udp.read(data, 1); // read 1 byte from the buffer
+    ATMEGA_Serial.write(commands[data[0]] | (1 << 7));
     switch (commands[data[0]]) {
-      case FORWARD:
+      case BRAKE:
+      case MANUAL:
         movement = 0;
         break;
-      case LEFT:
+      case FORWARD:
         movement = 1;
         break;
-      case BACKWARD:
+      case LEFT:
         movement = 2;
         break;
-      case RIGHT:
+      case BACKWARD:
         movement = 3;
         break;
-      default:
+      case RIGHT:
         movement = 4;
+        break;
+      case CHG_STATION:
+        movement = 5; // auto
+        break;
+      case LIGHTS_ON:
+        lights = 1;
+        break;
+      case LIGHTS_OFF:
+        lights = 0;
+        break;
+      case LIGHTS_AUTO:
+        lights = 2;
+        break;
+      default:
+        // no default
         break;
     }
   }
@@ -195,7 +212,7 @@ void drawAll() {
   drawBattery(0, 1, batLevel);                                                       // show the battery level in the top bar
 #ifdef STATION
   if (WiFi.status() == WL_CONNECTED) {                                               // If there are stations connected to the access point
-    display.drawXbm(106, 1, 11, 9, wifi_bits[round(3.0*getQuality()/100)%4]);          // Show the Wi-Fi icon in the top bar
+    display.drawXbm(106, 1, 11, 9, wifi_bits[round(3.0 * getQuality() / 100) % 4]);    // Show the Wi-Fi icon in the top bar
   } else {                                                                           // Wi-Fi not connected
     if (millis() > nextWiFiFrame) {
       wififrame++;
@@ -206,7 +223,7 @@ void drawAll() {
   }
 #endif
   if (WiFi.softAPgetStationNum())
-      display.drawString(122, 0, String(WiFi.softAPgetStationNum()));                  // print the number of stations that are connected directly to the ESP's AP
+    display.drawString(122, 0, String(WiFi.softAPgetStationNum()));                  // print the number of stations that are connected directly to the ESP's AP
 
   if (lights == 0)                                                                   // if the lights are off
     display.drawXbm(20, 1, 9, 9, moon1_bits);                                          // show a moon symbol in the top bar
@@ -215,13 +232,16 @@ void drawAll() {
   else                                                                               // if the lights are in automatic mode
     display.drawString(20 + 4, 0, "A");                                                // show the letter A in the top bar
 
-  if (movement < 4)
-    drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement);              // show an arrow indicating the direction of the movement
-  else
+  if (movement == 0) {
+    display.drawString(DISPLAY_WIDTH / 4, DISPLAY_HEIGHT/2 + 10, "BRAKE");
+  } else if (movement <= 4) {
+    drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement - 1);          // show an arrow indicating the direction of the movement
+  } else {
     display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits);                      // Indicate that the wheelchair is navigating on autopilot
+  }
 
-  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, getQuality()/100.0, 27); // draw the speedometer (based on the voltage level)
-  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(getQuality()));     // draw the number under the speed gauge
+  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, getQuality() / 100.0, 27);  // draw the speedometer (based on the WiFi signal level)
+  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(getQuality())); // draw the number under the speed gauge
 
   display.display(); // send the frame buffer to the display
   nextRefresh = millis() + refresh;
@@ -257,7 +277,7 @@ void printStations() {
 }
 
 int getQuality() {
-  if(WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED)
     return 0;
   int dBm = WiFi.RSSI();
   if (dBm <= -100)

@@ -38,9 +38,9 @@
 #define MANUAL 0x4D // Power
 
 // Lights
-//#define LIGHTS_ON 0x63 // PP 
+#define LIGHTS_ON 0x63 // PP 
 #define LIGHTS_OFF 0x0D // Mute
-#define LIGHTS_AUTO 0x63 // AV 
+#define LIGHTS_AUTO 0x64 // AV 
 
 #define LIGHTS_RED 0x76
 #define LIGHTS_GREEN 0x72
