@@ -48,7 +48,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 #include "Commands.h" // HEX codes of the IR remote
 
 #define NB_OF_COMMANDS 9 // commands to send to the ATmega
-const uint8_t commands[NB_OF_COMMANDS] = { FORWARD, BACKWARD, LEFT, RIGHT, BRAKE, SPEEDUP, SPEEDDOWN, CHG_STATION, MANUAL};
+const uint8_t commands[NB_OF_COMMANDS] = { 
+  FORWARD,     // 0
+  BACKWARD,    // 1
+  LEFT,        // 2
+  RIGHT,       // 3
+  BRAKE,       // 4
+  SPEEDUP,     // 5
+  SPEEDDOWN,   // 6 
+  CHG_STATION, // 7
+  MANUAL       // 8
+}; // converts a number between 0 and NB_OF_COMMANDS-1 to the right command to send to the ATmega
+   // These numbers are sent by the webpage or Android app
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
