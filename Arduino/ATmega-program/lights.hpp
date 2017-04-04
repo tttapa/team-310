@@ -1,6 +1,6 @@
 // ShiftPWM settings
 //#define SHIFTPWM_USE_TIMER3
-const int ShiftPWM_latchPin = 9;
+const int ShiftPWM_latchPin = LATCH;
 //#define SHIFTPWM_NOSPI
 //const int ShiftPWM_dataPin = 11;
 //const int ShiftPWM_clockPin = 13;
@@ -8,7 +8,7 @@ const bool ShiftPWM_invertOutputs = false;
 const bool ShiftPWM_balanceLoad = false;
 #include <ShiftPWM.h>
 const unsigned char maxBrightness = 255;
-const unsigned char pwmFrequency = 75;
+const unsigned char pwmFrequency = 90;
 const int numRegisters = 3;
 const int numRGBleds = numRegisters * 8 / 3;
 
@@ -47,33 +47,45 @@ class Lights {
           _color = W;
           break;*/
         case LIGHTS_OFF:
+#ifdef DEBUG
           Serial.println("Lights off");
+#endif
           _color = BLACK;
           _rainbow = false;
           _auto = false;
           break;
         case LIGHTS_RED:
+#ifdef DEBUG
           Serial.println("Lights red");
+#endif
           _color = RED;
           _rainbow = false;
           break;
         case LIGHTS_GREEN:
+#ifdef DEBUG
           Serial.println("Lights green");
+#endif
           _color = GREEN;
           _rainbow = false;
           break;
         case LIGHTS_YELLOW:
+#ifdef DEBUG
           Serial.println("Lights white");
+#endif    
           _color = YELLOW;
           _rainbow = false;
           break;
         case LIGHTS_BLUE:
+#ifdef DEBUG
           Serial.println("Lights blue");
+#endif
           _color = BLUE;
           _rainbow = false;
           break;
         case LIGHTS_RAINBOW:
+#ifdef DEBUG
           Serial.println("Lights rainbow");
+#endif
           _rainbow = true;
           break;
         case LIGHTS_AUTO:
@@ -81,7 +93,9 @@ class Lights {
             _auto = !_auto;
             if (_color == BLACK && _auto)
               _color = WHITE;
+#ifdef DEBUG
             Serial.println(_auto ? "Lights automatic" : "Lights manual");
+#endif            
             // biep(10);
             _lastAutoCmd = millis();
           }
@@ -124,16 +138,20 @@ class Lights {
 };
 
 void printColor(uint8_t * color) {
+#ifdef DEBUG
   Serial.print('#');
   printHex(color[2]);
   printHex(color[1]);
   printHex(color[0]);
   Serial.println();
+#endif
 }
 
 void printHex(uint8_t val) {
+#ifdef DEBUG
   if (!(val >> 4))
     Serial.print('0');
   Serial.print(val, HEX);
+#endif
 }
 

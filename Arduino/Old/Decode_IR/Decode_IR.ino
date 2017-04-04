@@ -9,7 +9,7 @@ unsigned int Buffer[RAWBUF];
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   My_Receiver.enableIRIn(); // Start the receiver
   My_Decoder.UseExtnBuf(Buffer);
 }

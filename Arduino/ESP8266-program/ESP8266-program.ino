@@ -31,6 +31,8 @@ const float voltageCalib = 1.08;            // Analog input voltage differs from
 const float minVoltage = 2.0;               // minimum battery voltage
 const float maxVoltage = 6.5;               // voltage of fully charged battery
 
+const unsigned long remote_timeout = 200;
+
 #include <WebSocketsServer.h>
 
 // function prototype
@@ -97,6 +99,11 @@ unsigned long nextRefresh = millis();
 int lights = 0;
 int movement = 0;
 
+uint8_t serialMessage[2];
+boolean messageDone = false;
+
+unsigned long lastDriveCmd = 0;
+
 void loop() {
   ArduinoOTA.handle();                        // check for over the air updates
   server.handleClient();                      // run the HTTP server
@@ -105,6 +112,28 @@ void loop() {
 
   if (millis() > nextRefresh) {
     drawAll();
+  }
+
+  if (ATMEGA_Serial.available() > 0) {
+    uint8_t data = ATMEGA_Serial.read();
+    DEBUG_Serial.print("Serial data:\t0x");
+    DEBUG_Serial.println(data & ~(1 << 7), HEX);
+    if (data >> 7) {
+      serialMessage[0] = data;
+      if (data != 0b10000001) { // if it's not a speed message, the packet is only one byte long
+        messageDone = true;
+      }
+    } else if (serialMessage[0] == 0b10000001) {
+      serialMessage[1] = data;
+      messageDone = true;
+    }
+  }
+  if (messageDone) {
+    handleSerial();
+    messageDone = false;
+  }
+  if (millis() > (lastDriveCmd + remote_timeout)) {
+    movement = 0;
   }
 
   checkUDP();
@@ -147,7 +176,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         default:
           movement = 4;
           break;
-      }*/
+        }*/
       break;
   }
 }
@@ -160,39 +189,6 @@ void checkUDP() {
     uint8_t data[1];
     udp.read(data, 1); // read 1 byte from the buffer
     ATMEGA_Serial.write(commands[data[0]] | (1 << 7));
-    switch (commands[data[0]]) {
-      case BRAKE:
-      case MANUAL:
-        movement = 0;
-        break;
-      case FORWARD:
-        movement = 1;
-        break;
-      case LEFT:
-        movement = 2;
-        break;
-      case BACKWARD:
-        movement = 3;
-        break;
-      case RIGHT:
-        movement = 4;
-        break;
-      case CHG_STATION:
-        movement = 5; // auto
-        break;
-      case LIGHTS_ON:
-        lights = 1;
-        break;
-      case LIGHTS_OFF:
-        lights = 0;
-        break;
-      case LIGHTS_AUTO:
-        lights = 2;
-        break;
-      default:
-        // no default
-        break;
-    }
   }
 }
 
@@ -233,7 +229,7 @@ void drawAll() {
     display.drawString(20 + 4, 0, "A");                                                // show the letter A in the top bar
 
   if (movement == 0) {
-    display.drawString(DISPLAY_WIDTH / 4, DISPLAY_HEIGHT/2 + 10, "BRAKE");
+    display.drawString(DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 10, "BRAKE");
   } else if (movement <= 4) {
     drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement - 1);          // show an arrow indicating the direction of the movement
   } else {
@@ -285,5 +281,45 @@ int getQuality() {
   if (dBm >= -50)
     return 100;
   return 2 * (dBm + 100);
+}
+
+void handleSerial() {
+  switch (serialMessage[0] & ~(1 << 7)) {
+    case BRAKE:
+    case MANUAL:
+      movement = 0;
+      break;
+    case FORWARD:
+      movement = 1;
+      lastDriveCmd = millis();
+      break;
+    case LEFT:
+      movement = 2;
+      lastDriveCmd = millis();
+      break;
+    case BACKWARD:
+      movement = 3;
+      lastDriveCmd = millis();
+      break;
+    case RIGHT:
+      movement = 4;
+      lastDriveCmd = millis();
+      break;
+    case CHG_STATION:
+      movement = 5; // auto
+      break;
+    case LIGHTS_ON:
+      lights = 1;
+      break;
+    case LIGHTS_OFF:
+      lights = 0;
+      break;
+    case LIGHTS_AUTO:
+      lights = 2;
+      break;
+    default:
+      // no default
+      break;
+  }
 }
 

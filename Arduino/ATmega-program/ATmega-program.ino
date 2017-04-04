@@ -12,7 +12,7 @@ const uint8_t DIRECTION_L = 7;
 const uint8_t DIRECTION_R = 8;
 
 const uint8_t DATA = 11;
-const uint8_t LATCH = 12;
+const uint8_t LATCH = 10;
 const uint8_t CLOCK = 13;
 
 const uint8_t LIGHT_SENSOR = A0;
@@ -55,8 +55,10 @@ void loop() {
 #ifdef WIFI
   if (Serial.available() > 0) {
     uint8_t data = Serial.read();
+#ifdef DEBUG
     Serial.print("Serial data:\t0x");
     Serial.println(data & ~(1 << 7), HEX);
+#endif
     if (data >> 7) {
       serialMessage[0] = data;
       if (data != 0b10000001) { // if it's not a speed message, the packet is only one byte long
@@ -68,7 +70,11 @@ void loop() {
     }
   }
   if (messageDone) {
+#ifdef DEBUG
     Serial.println("Message is being processed");
+#else
+    Serial.write(serialMessage, 2);
+#endif
     drive.checkIR(serialMessage[0] & ~(1 << 7));
     lights.checkIR(serialMessage[0] & ~(1 << 7));
     messageDone = false;
@@ -79,6 +85,8 @@ void loop() {
     My_Decoder.decode();
 #ifdef DEBUG
     Serial.println(My_Decoder.value, HEX);
+#elif defined WIFI
+    Serial.write(My_Decoder.value | (1<<7));
 #endif
     drive.checkIR(My_Decoder.value);
     lights.checkIR(My_Decoder.value);
@@ -92,7 +100,9 @@ void loop() {
       maxSpeed = speed;
     }
   }
+#ifdef DEBUG
   Serial.println(maxSpeed);
+#endif
 }
 
 void checkSpeed() {
