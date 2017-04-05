@@ -8,7 +8,7 @@ const bool ShiftPWM_invertOutputs = false;
 const bool ShiftPWM_balanceLoad = false;
 #include <ShiftPWM.h>
 const unsigned char maxBrightness = 255;
-const unsigned char pwmFrequency = 90;
+const unsigned char pwmFrequency = 80;
 const int numRegisters = 3;
 const int numRGBleds = numRegisters * 8 / 3;
 
@@ -32,7 +32,12 @@ const unsigned long auto_timeout = 600;
 class Lights {
   public:
     Lights() {
-      /* nothing in the construcor */
+      pinMode(LIGHTS, OUTPUT);
+      digitalWrite(LIGHTS, 0);
+    }
+    ~Lights() {
+      pinMode(LIGHTS, INPUT);
+      digitalWrite(LIGHTS, 0);
     }
     void begin() {
       ShiftPWM.SetAmountOfRegisters(numRegisters);
@@ -42,14 +47,24 @@ class Lights {
     void checkIR(uint16_t cmd) {
       cmd &= 0xFF;
       switch (cmd) {
-        /*case LIGHTS_ON:
+        case LIGHTS_ON:
+#ifdef DEBUG
           Serial.println("Lights on");
-          _color = W;
-          break;*/
+#elif defined WIFI
+          Serial.write(LIGHTS_ON | (1 << 7));
+#endif
+          digitalWrite(LIGHTS, 1);
+          _color = WHITE;
+          _rainbow = false;
+          _auto = false;
+          break;
         case LIGHTS_OFF:
 #ifdef DEBUG
           Serial.println("Lights off");
+#elif defined WIFI
+          Serial.write(LIGHTS_OFF | (1 << 7));
 #endif
+          digitalWrite(LIGHTS, 0);
           _color = BLACK;
           _rainbow = false;
           _auto = false;
@@ -57,36 +72,51 @@ class Lights {
         case LIGHTS_RED:
 #ifdef DEBUG
           Serial.println("Lights red");
+#elif defined WIFI
+          Serial.write(LIGHTS_RED | (1 << 7));
 #endif
           _color = RED;
           _rainbow = false;
+          _auto = false;
           break;
         case LIGHTS_GREEN:
 #ifdef DEBUG
           Serial.println("Lights green");
+#elif defined WIFI
+          Serial.write(LIGHTS_GREEN| (1 << 7));
 #endif
           _color = GREEN;
           _rainbow = false;
+          _auto = false;
           break;
         case LIGHTS_YELLOW:
 #ifdef DEBUG
-          Serial.println("Lights white");
-#endif    
+          Serial.println("Lights yellow");
+#elif defined WIFI
+          Serial.write(LIGHTS_YELLOW | (1 << 7));
+#endif
           _color = YELLOW;
           _rainbow = false;
+          _auto = false;
           break;
         case LIGHTS_BLUE:
 #ifdef DEBUG
           Serial.println("Lights blue");
+#elif defined WIFI
+          Serial.write(LIGHTS_BLUE | (1 << 7));
 #endif
           _color = BLUE;
           _rainbow = false;
+          _auto = false;
           break;
         case LIGHTS_RAINBOW:
 #ifdef DEBUG
           Serial.println("Lights rainbow");
+#elif defined WIFI
+          Serial.write(LIGHTS_RAINBOW | (1 << 7));
 #endif
           _rainbow = true;
+          _auto = false;
           break;
         case LIGHTS_AUTO:
           if (millis() > (_lastAutoCmd + auto_timeout)) {
@@ -95,7 +125,9 @@ class Lights {
               _color = WHITE;
 #ifdef DEBUG
             Serial.println(_auto ? "Lights automatic" : "Lights manual");
-#endif            
+#elif defined WIFI
+          Serial.write(LIGHTS_AUTO | (1 << 7));
+#endif
             // biep(10);
             _lastAutoCmd = millis();
           }
@@ -108,17 +140,19 @@ class Lights {
       if ( millis() > _next) {
         if (_auto) {
           uint16_t light = analogRead(LIGHT_SENSOR);
-          if(light > darkThreshold) {
+          if (light > darkThreshold) {
             ShiftPWM.SetAllRGB(WHITE[0], WHITE[1], WHITE[2]);
+            digitalWrite(LIGHTS, 1);
           } else {
             ShiftPWM.SetAllRGB(BLACK[0], BLACK[1], BLACK[2]);
+            digitalWrite(LIGHTS, 0);
           }
         } else {
           ShiftPWM.SetAllRGB(_color[0], _color[1], _color[2]);
         }
         if (_rainbow) {
-          for(int led = 0; led < numRGBleds; led++) {
-            ShiftPWM.SetHSV(led, (_hue+led*15)%360, 255, 255);
+          for (int led = 0; led < numRGBleds; led++) {
+            ShiftPWM.SetHSV(led, (_hue + led * 15) % 360, 255, 255);
           }
           _hue = (_hue + 3) % 360;
           _next = millis() + _hueDelay;

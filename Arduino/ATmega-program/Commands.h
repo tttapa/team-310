@@ -84,4 +84,9 @@
 
 #endif
 
+// Remote-independent commands
+
+#define SETSPEED 0x01
+#define REALSPEED 0x02
+
 #endif

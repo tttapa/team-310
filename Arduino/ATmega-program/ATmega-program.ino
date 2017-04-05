@@ -10,6 +10,7 @@ const uint8_t SPEED_L = 5;
 const uint8_t SPEED_R = 6;
 const uint8_t DIRECTION_L = 7;
 const uint8_t DIRECTION_R = 8;
+const uint8_t LIGHTS = 9;
 
 const uint8_t DATA = 11;
 const uint8_t LATCH = 10;
@@ -73,7 +74,7 @@ void loop() {
 #ifdef DEBUG
     Serial.println("Message is being processed");
 #else
-    Serial.write(serialMessage, 2);
+    // Serial.write(serialMessage, 2);
 #endif
     drive.checkIR(serialMessage[0] & ~(1 << 7));
     lights.checkIR(serialMessage[0] & ~(1 << 7));
@@ -86,7 +87,7 @@ void loop() {
 #ifdef DEBUG
     Serial.println(My_Decoder.value, HEX);
 #elif defined WIFI
-    Serial.write(My_Decoder.value | (1<<7));
+    // Serial.write(My_Decoder.value | (1<<7));
 #endif
     drive.checkIR(My_Decoder.value);
     lights.checkIR(My_Decoder.value);

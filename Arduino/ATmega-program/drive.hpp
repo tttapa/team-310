@@ -16,6 +16,17 @@ const size_t nb_speed_levels = 3;
 const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
 
 class Drive {
+  private:
+    uint8_t _speed, _movement, _prevMovement;
+    unsigned long _lastDriveCmd;
+    unsigned long _lastSpdUpCmd;
+    unsigned long _lastSpdDwnCmd;
+    unsigned long _biepEnd;
+    boolean _auto = false;
+    boolean _foundRight = false;
+    boolean _foundLeft = false;
+    boolean _foundLine = false;
+
   public:
     Drive() {
       pinMode(DIRECTION_L, OUTPUT);
@@ -45,19 +56,12 @@ class Drive {
       cmd &= 0xFF;
       switch (cmd) {
         case FORWARD:
-          fwd();
-          break;
         case BACKWARD:
-          bwd();
-          break;
         case LEFT:
-          lft();
-          break;
         case RIGHT:
-          rgt();
-          break;
         case BRAKE:
-          brk();
+          _lastDriveCmd = millis();
+          _movement = cmd;
           break;
         case SPEEDUP:
           speedup();
@@ -86,90 +90,110 @@ class Drive {
           findLine();
         }
       } else {
-        if (millis() > (_lastDriveCmd + remote_timeout) && ! _braked) {
-          brk();
+        if (millis() > (_lastDriveCmd + remote_timeout)) {
+          _movement = BRAKE;
         }
+      }
+
+      if (_movement != _prevMovement) {
+        move();
+        _prevMovement = _movement;
       }
 
       if (millis() > _biepEnd)
         biepOff();
 #ifdef DEBUG
-      if(_foundLeft)
+      if (_foundLeft)
         Serial.print("Found Left\t");
-      if(_foundRight)
+      if (_foundRight)
         Serial.print("Found Right\t");
-      if(_foundLine)
+      if (_foundLine)
         Serial.print("Found Line\t");
 #endif
     }
 
-    
+
     uint8_t getSpeed() {
       return _speed;
     }
+
+
   private:
-    uint8_t _speed, LINE_LEFT, LINE_RIGHT, LINE_LED, BUZZER;
-    unsigned long _lastDriveCmd;
-    unsigned long _lastSpdUpCmd;
-    unsigned long _lastSpdDwnCmd;
-    unsigned long _biepEnd;
-    boolean _braked = true;
-    boolean _auto = false;
-    boolean _foundRight = false;
-    boolean _foundLeft = false;
-    boolean _foundLine = false;
-    
+
+    /* _________________________________MOVEMENT_________________________________ */
+
+    void move() {
+      switch (_movement) {
+        case FORWARD:
+          fwd();
+          break;
+        case BACKWARD:
+          bwd();
+          break;
+        case LEFT:
+          lft();
+          break;
+        case RIGHT:
+          rgt();
+          break;
+        default: // case BRAKE:
+          brk();
+          break;
+      }
+    }
+
     void fwd() {
 #ifdef DEBUG
       Serial.println("forward");
+#elif defined WIFI
+      Serial.write(FORWARD | (1 << 7));
 #endif
       digitalWrite(DIRECTION_L, LOW); // Set the direction of both motors to forward
       digitalWrite(DIRECTION_R, LOW);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
-      _lastDriveCmd = millis();
-      _braked = false;
     }
     void bwd() {
 #ifdef DEBUG
       Serial.println("backward");
+#elif defined WIFI
+      Serial.write(BACKWARD | (1 << 7));
 #endif
       digitalWrite(DIRECTION_L, HIGH); // Set the direction of both motors to backward
       digitalWrite(DIRECTION_R, HIGH);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
-      _lastDriveCmd = millis();
-      _braked = false;
     }
     void lft() {
 #ifdef DEBUG
       Serial.println("left");
+#elif defined WIFI
+      Serial.write(LEFT | (1 << 7));
 #endif
       digitalWrite(DIRECTION_L, HIGH); // Set the direction of the left motor to backward
       digitalWrite(DIRECTION_R, LOW);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      _lastDriveCmd = millis();
-      _braked = false;
     }
     void rgt() {
 #ifdef DEBUG
       Serial.println("right");
+#elif defined WIFI
+      Serial.write(RIGHT | (1 << 7));
 #endif
       digitalWrite(DIRECTION_L, LOW); // Set the direction of the right motor to backward
       digitalWrite(DIRECTION_R, HIGH);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      _lastDriveCmd = millis();
-      _braked = false;
     }
     void brk() {
 #ifdef DEBUG
       Serial.println("brake");
+#elif defined WIFI
+      Serial.write(BRAKE | (1 << 7));
 #endif
       digitalWrite(SPEED_L, 0);
       digitalWrite(SPEED_R, 0);
-      _braked = true;
     }
     void lftFwd() {
 #ifdef DEBUG
@@ -179,8 +203,6 @@ class Drive {
       digitalWrite(DIRECTION_R, LOW);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
-      _lastDriveCmd = millis();
-      _braked = false;
     }
     void rgtFwd() {
 #ifdef DEBUG
@@ -190,9 +212,10 @@ class Drive {
       digitalWrite(DIRECTION_R, LOW);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      _lastDriveCmd = millis();
-      _braked = false;
     }
+
+    /* _________________________________SPEED_________________________________ */
+
     void speedup() {
       if (millis() > (_lastSpdUpCmd + speed_timeout)) {
         if (++_speed >= nb_speed_levels) {
@@ -206,6 +229,11 @@ class Drive {
 #ifdef DEBUG
       Serial.print("Speed:\t");
       Serial.println(_speed);
+#elif defined WIFI
+      Serial.write(SETSPEED | (1 << 7));
+      Serial.write(_speed & ~(1 << 7));
+      Serial.write(REALSPEED | (1 << 7));
+      Serial.write(SPEED_LEVELS[_speed] >> 1);
 #endif
     }
     void speeddown() {
@@ -221,8 +249,15 @@ class Drive {
 #ifdef DEBUG
       Serial.print("Speed:\t");
       Serial.println(_speed);
+#elif defined WIFI
+      Serial.write(SETSPEED | (1 << 7));
+      Serial.write(_speed & ~(1 << 7));
+      Serial.write(REALSPEED | (1 << 7));
+      Serial.write(SPEED_LEVELS[_speed] >> 1);
 #endif
     }
+
+    /* _________________________________BUZZER_________________________________ */
 
     void biep(unsigned long len) {
       if (BUZZER != 255) {
@@ -236,10 +271,12 @@ class Drive {
       }
     }
 
+    /* _________________________________LINE_FOLLOWER_________________________________ */
+
     void findLine() {
       _speed = 0;
       if (_foundRight) {
-      rgt();
+        rgt();
         if (getRightColor() == GROUND) {
           fwd();
           _foundLine = true;
@@ -311,7 +348,7 @@ class Drive {
     }
     int ambientReflectionDiff(uint8_t pin) {
 #ifdef TEST
-      return 1023 - 1023*digitalRead(pin);
+      return 1023 - 1023 * digitalRead(pin);
 #else
       int amb = analogRead(pin);
       digitalWrite(LINE_LED, HIGH);

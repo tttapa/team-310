@@ -1,4 +1,4 @@
-#define DEBUG_Serial Serial  // Use Serial1 for debugging, and Serial for communication with the ATmega
+#define DEBUG_Serial Serial1  // Use Serial1 for debugging, and Serial for communication with the ATmega
 #define ATMEGA_Serial Serial
 
 #define STATION // connect to a WiFi network, as well as creating an access point
@@ -29,7 +29,7 @@ const float ResRatio = R2 / (R1 + R2);      // Elektrische netwerken ftw :P
 const float voltageCalib = 1.08;            // Analog input voltage differs from actual voltage
 
 const float minVoltage = 2.0;               // minimum battery voltage
-const float maxVoltage = 6.5;               // voltage of fully charged battery
+const float maxVoltage = 6.0;               // voltage of fully charged battery
 
 const unsigned long remote_timeout = 200;
 
@@ -96,13 +96,13 @@ void setup() {
 unsigned long refresh = 50; // refresh rate of the OLED display, value in milliseconds
 unsigned long nextRefresh = millis();
 
-int lights = 0;
+int lights = 2;
 int movement = 0;
+int speed = 0;
+float realSpeed = 0;
 
 uint8_t serialMessage[2];
 boolean messageDone = false;
-
-unsigned long lastDriveCmd = 0;
 
 void loop() {
   ArduinoOTA.handle();                        // check for over the air updates
@@ -120,20 +120,19 @@ void loop() {
     DEBUG_Serial.println(data & ~(1 << 7), HEX);
     if (data >> 7) {
       serialMessage[0] = data;
-      if (data != 0b10000001) { // if it's not a speed message, the packet is only one byte long
+      uint8_t cmd = data & ~(1 << 7);
+      if ((cmd != SETSPEED) && (cmd != REALSPEED)) { // if it's not a speed message, the packet is only one byte long
         messageDone = true;
       }
-    } else if (serialMessage[0] == 0b10000001) {
+    } else {
       serialMessage[1] = data;
       messageDone = true;
     }
   }
   if (messageDone) {
+    DEBUG_Serial.printf("Data 1: %02X\tData 2: %02X\r\n", serialMessage[0], serialMessage[1]);
     handleSerial();
     messageDone = false;
-  }
-  if (millis() > (lastDriveCmd + remote_timeout)) {
-    movement = 0;
   }
 
   checkUDP();
@@ -160,23 +159,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS; // convert from HEX string to number
       DEBUG_Serial.println(commands[index], HEX);
       ATMEGA_Serial.write(commands[index] | (1 << 7));
-      /*switch (commands[index]) {
-        case FORWARD:
-          movement = 0;
-          break;
-        case LEFT:
-          movement = 1;
-          break;
-        case BACKWARD:
-          movement = 2;
-          break;
-        case RIGHT:
-          movement = 3;
-          break;
-        default:
-          movement = 4;
-          break;
-        }*/
       break;
   }
 }
@@ -236,8 +218,10 @@ void drawAll() {
     display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits);                      // Indicate that the wheelchair is navigating on autopilot
   }
 
-  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, getQuality() / 100.0, 27);  // draw the speedometer (based on the WiFi signal level)
-  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(getQuality())); // draw the number under the speed gauge
+  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, realSpeed, 27);  // draw the speedometer (based on the WiFi signal level)
+  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(realSpeed)); // draw the number under the speed gauge
+
+  display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 12, String(speed));
 
   display.display(); // send the frame buffer to the display
   nextRefresh = millis() + refresh;
@@ -291,19 +275,15 @@ void handleSerial() {
       break;
     case FORWARD:
       movement = 1;
-      lastDriveCmd = millis();
       break;
     case LEFT:
       movement = 2;
-      lastDriveCmd = millis();
       break;
     case BACKWARD:
       movement = 3;
-      lastDriveCmd = millis();
       break;
     case RIGHT:
       movement = 4;
-      lastDriveCmd = millis();
       break;
     case CHG_STATION:
       movement = 5; // auto
@@ -317,9 +297,16 @@ void handleSerial() {
     case LIGHTS_AUTO:
       lights = 2;
       break;
+    case SETSPEED:
+      speed = serialMessage[1];
+      break;
+    case REALSPEED:
+      realSpeed = ((uint8_t) serialMessage[1]) / 127.0;
+      break;
     default:
       // no default
       break;
   }
+
 }
 
