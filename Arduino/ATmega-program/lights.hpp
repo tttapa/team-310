@@ -26,6 +26,7 @@ void printColor(uint8_t * color);
 void printHex(uint8_t val);
 
 const int lightThreshold = 600;
+const int hysteresis = 60;
 
 const unsigned long auto_timeout = 600;
 
@@ -83,7 +84,7 @@ class Lights {
 #ifdef DEBUG
           Serial.println("Lights green");
 #elif defined WIFI
-          Serial.write(LIGHTS_GREEN| (1 << 7));
+          Serial.write(LIGHTS_GREEN | (1 << 7));
 #endif
           _color = GREEN;
           _rainbow = false;
@@ -126,7 +127,7 @@ class Lights {
 #ifdef DEBUG
             Serial.println(_auto ? "Lights automatic" : "Lights manual");
 #elif defined WIFI
-          Serial.write(LIGHTS_AUTO | (1 << 7));
+            Serial.write(LIGHTS_AUTO | (1 << 7));
 #endif
             // biep(10);
             _lastAutoCmd = millis();
@@ -140,10 +141,10 @@ class Lights {
       if ( millis() > _next) {
         if (_auto) {
           uint16_t light = analogRead(LIGHT_SENSOR);
-          if (light > darkThreshold) {
-            ShiftPWM.SetAllRGB(WHITE[0], WHITE[1], WHITE[2]);
+          if (light > lightThreshold) {
+            ShiftPWM.SetAllRGB(_color[0], _color[1], _color[2]);
             digitalWrite(LIGHTS, 1);
-          } else {
+          } else if(light < lightThreshold - hysteresis) {
             ShiftPWM.SetAllRGB(BLACK[0], BLACK[1], BLACK[2]);
             digitalWrite(LIGHTS, 0);
           }
