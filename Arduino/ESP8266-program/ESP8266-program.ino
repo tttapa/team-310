@@ -93,7 +93,13 @@ void setup() {
 
 /*__________________________________________________________LOOP__________________________________________________________*/
 
-unsigned long refresh = 50; // refresh rate of the OLED display, value in milliseconds
+IPAddress UDP_remoteIP;
+int UDP_remotePort = 0;
+
+const unsigned long UDP_interval = 500;
+unsigned long nextUDP = millis();
+
+const unsigned long refresh = 50; // refresh rate of the OLED display, value in milliseconds
 unsigned long nextRefresh = millis();
 
 int lights = 2;
@@ -112,6 +118,11 @@ void loop() {
 
   if (millis() > nextRefresh) {
     drawAll();
+  }
+
+  if (millis() > nextUDP) {
+    sendUDP();
+    nextUDP = millis() + UDP_interval;
   }
 
   if (ATMEGA_Serial.available() > 0) {
@@ -171,6 +182,21 @@ void checkUDP() {
     uint8_t data[1];
     udp.read(data, 1); // read 1 byte from the buffer
     ATMEGA_Serial.write(commands[data[0]] | (1 << 7));
+
+    UDP_remoteIP = udp.remoteIP();
+    UDP_remotePort = udp.remotePort();
+  }
+}
+
+void sendUDP() {
+  if (UDP_remotePort) {
+    // send UDP packet with battery information back to client
+    float voltage = analogRead(A0) * voltageCalib / ResRatio / 1024.0;                 // measure the voltage of the battery
+    voltage = voltage > minVoltage ? voltage - minVoltage : 0.0;                       // convert to a 7-bit number relative to the minimum and maximum voltage
+    uint8_t voltageCode = voltage < maxVoltage ? voltage * 127 / maxVoltage : 127;
+    udp.beginPacket(UDP_remoteIP, UDP_remotePort);
+    udp.write(voltageCode);
+    udp.endPacket();
   }
 }
 
