@@ -25,10 +25,9 @@ const uint8_t BLACK[] =  {0, 0, 0};
 void printColor(uint8_t * color);
 void printHex(uint8_t val);
 
-const int lightThreshold = 600;
+const int lightThreshold = 700;
 const int hysteresis = 60;
 
-const unsigned long auto_timeout = 600;
 
 class Lights {
   public:
@@ -117,21 +116,17 @@ class Lights {
           Serial.write(LIGHTS_RAINBOW | (1 << 7));
 #endif
           _rainbow = true;
-          _auto = false;
+          //_auto = false;
           break;
         case LIGHTS_AUTO:
-          if (millis() > (_lastAutoCmd + auto_timeout)) {
-            _auto = !_auto;
-            if (_color == BLACK && _auto)
-              _color = WHITE;
+          _auto = true;
+          if (_color == BLACK && _auto)
+            _color = WHITE;
 #ifdef DEBUG
-            Serial.println(_auto ? "Lights automatic" : "Lights manual");
+          Serial.println("Lights automatic");
 #elif defined WIFI
-            Serial.write(LIGHTS_AUTO | (1 << 7));
+          Serial.write(LIGHTS_AUTO | (1 << 7));
 #endif
-            // biep(10);
-            _lastAutoCmd = millis();
-          }
           break;
       }
     }
@@ -144,7 +139,7 @@ class Lights {
           if (light > lightThreshold) {
             ShiftPWM.SetAllRGB(_color[0], _color[1], _color[2]);
             digitalWrite(LIGHTS, 1);
-          } else if(light < lightThreshold - hysteresis) {
+          } else if (light < lightThreshold - hysteresis) {
             ShiftPWM.SetAllRGB(BLACK[0], BLACK[1], BLACK[2]);
             digitalWrite(LIGHTS, 0);
           }
@@ -164,7 +159,6 @@ class Lights {
   private:
     unsigned long _next;
     unsigned long _hueDelay = 20;
-    unsigned long _lastAutoCmd = 0;
     int _counter = 0;
     int _hue = 0;
     uint8_t *_color = WHITE;
