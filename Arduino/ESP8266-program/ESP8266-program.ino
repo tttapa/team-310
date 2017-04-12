@@ -28,8 +28,8 @@ const float R2 = 9900;
 const float ResRatio = R2 / (R1 + R2);      // Elektrische netwerken ftw :P
 const float voltageCalib = 1.08;            // Analog input voltage differs from actual voltage
 
-const float minVoltage = 2.0;               // minimum battery voltage
-const float maxVoltage = 6.0;               // voltage of fully charged battery
+const float minVoltage = 5.0;               // minimum battery voltage
+const float maxVoltage = 6.1;               // voltage of fully charged battery
 
 const unsigned long remote_timeout = 200;
 
@@ -303,13 +303,13 @@ void handleSerial() {
       movement = 1;
       break;
     case LEFT:
-      movement = 2;
+      movement = 4;
       break;
     case BACKWARD:
       movement = 3;
       break;
     case RIGHT:
-      movement = 4;
+      movement = 2;
       break;
     case CHG_STATION:
       movement = 5; // auto
