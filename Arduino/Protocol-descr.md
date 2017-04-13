@@ -1,5 +1,5 @@
 # Protocol description
-## message format
+## Message format
 ```0b 1ccc cccc  0ddd dddd```  
 `c`: command (7-bit)  
 `d`: data (7-bits)  
@@ -37,6 +37,7 @@ When a client is disconnected, the vehicle should immediately brake, unless a co
 
 #### General
 - Reset:    0x01
+- Brake:    0x62
 - Auto:     0x4E (Menu)
 - Power:    0x4D
 - Lights on:    0x63 (PP) 
@@ -48,12 +49,42 @@ When a client is disconnected, the vehicle should immediately brake, unless a co
 - Blue:     0x74
 - Rainbow:  0x41 (TV)
 ### 2-byte commands
-- Speed setting:    0x03
-
+- Speed setting:     0x03
+- Left wheel power:  0x04
+- Right wheel power: 0x05
 ## Vehicle to client
 ### 1-byte commands
 - Reset:    0x01
 ### 2-byte commands
-- Battery voltage:  0x02
-- Speed setting:    0x03
-- Actual speed:     0x04
+- Battery voltage:   0x02
+- Speed setting:     0x03
+- Actual speed:      0x06
+
+## Encoding data bytes
+In order to increase accuracy, speed and battery level values are encoded: d = 0x00 represents the minimum value, and d = 0x7F represents the maximum value. 
+```
+if(raw <= min)
+  data = 0;
+else if(raw >= max)
+  data = 0x7F;
+else 
+  data = (raw - min) * 0x7F / (max - min);
+```
+On the receiver side, this becomes:
+```
+raw = data * (max - min) / 0x7F + min;
+```
+
+# Android Client App
+## Communication
+The app should use the WebSocket protocol to communicate with the vehicle. 
+## Drive commands
+The app should contain four buttons to send the forward, backward, left and right commands. When one of these buttons is pressed, it should send the appropriate direction command, when the button is released, a brake command is to be sent.  
+
+Alternatively, a joystick-like control may be implemented. The _Left and Right wheel power_ commands can be used to send the right instructions to the vehicle.
+## Lights
+The color should be initialized to white, and the mode to _off_.
+## Speed
+The app should display the actual speed, both as a decimal value, and on a speedometer gauge.
+Setting the speed level can be done using a slider with n positions, or n separate buttons.
+Increment/decrement commants may not be used, only absolute _speed setting_ commands.
