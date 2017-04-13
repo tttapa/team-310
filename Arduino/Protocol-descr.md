@@ -87,6 +87,6 @@ The color should be initialized to white, and the mode to _off_.
 ## Speed
 The app should display the actual speed, both as a decimal value, and on a speedometer gauge.
 Setting the speed level can be done using a slider with n positions, or n separate buttons.
-Increment/decrement commants may not be used, only absolute _speed setting_ commands.
+Increment/decrement commands may not be used, only absolute _speed setting_ commands.
 ## Battery
 The app should display the battery level of the vehicle, and produce a warning message when the level is too low.
