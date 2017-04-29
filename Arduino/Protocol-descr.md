@@ -75,18 +75,18 @@ On the receiver side, this becomes:
 raw = data * (max - min) / 0x7F + min;
 ```
 
-# Android Client App
-## Communication
+## Android Client App
+### Communication
 The app should use the WebSocket protocol to communicate with the vehicle. 
-## Drive commands
+### Drive commands
 The app should contain four buttons to send the forward, backward, left and right commands. When one of these buttons is pressed, it should send the appropriate direction command, when the button is released, a brake command is to be sent.  
 
 Alternatively, a joystick-like control may be implemented. The _Left and Right wheel power_ commands can be used to send the right instructions to the vehicle.
-## Lights
+### Lights
 The color should be initialized to white, and the mode to _off_.
-## Speed
+### Speed
 The app should display the actual speed, both as a decimal value, and on a speedometer gauge.
 Setting the speed level can be done using a slider with n positions, or n separate buttons.
 Increment/decrement commands may not be used, only absolute _speed setting_ commands.
-## Battery
+### Battery
 The app should display the battery level of the vehicle, and produce a warning message when the level is too low.
