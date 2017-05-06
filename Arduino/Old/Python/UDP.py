@@ -1,8 +1,8 @@
 import socket, time
 
-commands = [0x00, 0x01, 0x02, 0x03, 0x09, 0x0A, 0x0B, 0x04, 0x05, 0x06]
+commands = [0x76, 0x62]#, 0x02, 0x03, 0x09, 0x0A, 0x0B, 0x04, 0x05, 0x06]
 
-UDP_IP = "hal-9310.local"
+UDP_IP = "3.1.0.1"
 UDP_PORT = 9310
 
 sock = socket.socket(socket.AF_INET, # Internet
@@ -13,5 +13,5 @@ while 1:
         print("message:", i)
         sock.sendto(bytes([i]), (UDP_IP, UDP_PORT))
 
-        time.sleep(1)
+        time.sleep(0.1)
 

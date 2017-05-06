@@ -1,6 +1,8 @@
 #define DEBUG_Serial Serial1  // Use Serial1 for debugging, and Serial for communication with the ATmega
 #define ATMEGA_Serial Serial
 
+//#define DEBUG_ESP_PORT Serial1
+
 #define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
 //#define FLIP // flip the OLED display upside down
@@ -8,7 +10,7 @@
 #include <ESP8266WiFi.h>
 
 const char *APssid         = "HAL 9310";
-const char *APpassword     = "pieter2001";
+const char *APpassword     = "wifiteam310";
 #ifdef STATION
 #include "WiFiCredentials.h"
 #endif
@@ -42,29 +44,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 #include "Images/sun.h"
 #include "Images/wifi.h"
 #include "Images/Auto.h"
+#include "Images/reboot.h"
 
 #include "OLED.h" // some custom display functions
 #include "NetworkInit.h" // Connect WiFi, start OTA, DNS, mDNS ...
 #include "ServerInit.h" // HTTP server, WebSocket, server handlers ...
 
 #include "Commands.h" // HEX codes of the IR remote
-
-#define NB_OF_COMMANDS 12 // commands to send to the ATmega
-const uint8_t commands[NB_OF_COMMANDS] = {
-  FORWARD,     // 0
-  BACKWARD,    // 1
-  LEFT,        // 2
-  RIGHT,       // 3
-  BRAKE,       // 4
-  SPEEDUP,     // 5
-  SPEEDDOWN,   // 6
-  CHG_STATION, // 7
-  MANUAL,      // 8
-  LIGHTS_ON,   // 9
-  LIGHTS_OFF,  // 10
-  LIGHTS_AUTO  // 11
-}; // converts a number between 0 and NB_OF_COMMANDS-1 to the right command to send to the ATmega
-// These numbers are sent by the webpage or Android app
 
 /*__________________________________________________________SETUP__________________________________________________________*/
 
@@ -99,22 +85,21 @@ int UDP_remotePort = 0;
 const unsigned long UDP_interval = 500;
 unsigned long nextUDP = millis();
 
-const unsigned long refresh = 50; // refresh rate of the OLED display, value in milliseconds
+const unsigned long refresh = 50; // refresh rate of the OLED display, value in milliseconds (50 ms → 20 fps
 unsigned long nextRefresh = millis();
 
 int lights = 2;
 int movement = 0;
 int speed = 0;
-float realSpeed = 0;
-
-uint8_t serialMessage[2];
-boolean messageDone = false;
+float actualSpeed = 0;
+boolean autopilot = false;
 
 void loop() {
   ArduinoOTA.handle();                        // check for over the air updates
   server.handleClient();                      // run the HTTP server
   webSocket.loop();                           // check for websocket events
   dnsServer.processNextRequest();             // process DNS requests
+  checkSerial();                              // Check if Serial data from the ATmega has arrived
 
   if (millis() > nextRefresh) {
     drawAll();
@@ -122,28 +107,8 @@ void loop() {
 
   if (millis() > nextUDP) {
     sendUDP();
+    sendWebSocket();
     nextUDP = millis() + UDP_interval;
-  }
-
-  if (ATMEGA_Serial.available() > 0) {
-    uint8_t data = ATMEGA_Serial.read();
-    DEBUG_Serial.print("Serial data:\t0x");
-    DEBUG_Serial.println(data & ~(1 << 7), HEX);
-    if (data >> 7) {
-      serialMessage[0] = data;
-      uint8_t cmd = data & ~(1 << 7);
-      if ((cmd != SETSPEED) && (cmd != REALSPEED)) { // if it's not a speed message, the packet is only one byte long
-        messageDone = true;
-      }
-    } else {
-      serialMessage[1] = data;
-      messageDone = true;
-    }
-  }
-  if (messageDone) {
-    DEBUG_Serial.printf("Data 1: %02X\tData 2: %02X\r\n", serialMessage[0], serialMessage[1]);
-    handleSerial();
-    messageDone = false;
   }
 
   checkUDP();
@@ -155,23 +120,37 @@ void loop() {
 
 /*__________________________________________________________WEBSOCKET__________________________________________________________*/
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) { // When a WebSocket message is received
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
-      DEBUG_Serial.printf("[%u] Disconnected!\n", num);
+      DEBUG_Serial.printf("[%u] Disconnected!\r\n", num);
       break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
-        DEBUG_Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        DEBUG_Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
       }
       break;
     case WStype_TEXT:                     // if new text data is received
       DEBUG_Serial.printf("[%u] get Text: %s: \t", num, payload);
-      int index = strtol((const char *) &payload[0], NULL, 16) % NB_OF_COMMANDS; // convert from HEX string to number
-      DEBUG_Serial.println(commands[index], HEX);
-      ATMEGA_Serial.write(commands[index] | (1 << 7));
+      int cmd = strtol((const char *) payload, NULL, 16); // convert from HEX string to number
+      DEBUG_Serial.println(cmd, HEX);
+      ATMEGA_Serial.write(cmd | (1 << 7));
+      if (length > 4) { // there's a data byte as well
+        int cmd = strtol((const char *) &payload[5], NULL, 16); // convert from HEX string to number
+      }
+
       break;
   }
+}
+
+void sendWebSocket() {
+  // send UDP packet with battery information back to client
+  float voltage = analogRead(A0) * voltageCalib / ResRatio / 1024.0;                 // measure the voltage of the battery
+  voltage = voltage > minVoltage ? voltage - minVoltage : 0.0;                       // convert to a 7-bit number relative to the minimum and maximum voltage
+  uint8_t voltageCode = voltage < maxVoltage ? voltage * 127 / maxVoltage : 127;
+  udp.beginPacket(UDP_remoteIP, UDP_remotePort);
+  udp.write(voltageCode);
+  udp.endPacket();
 }
 
 /*__________________________________________________________UDP__________________________________________________________*/
@@ -181,7 +160,7 @@ void checkUDP() {
   if (udpSize > 0) { // if there's new bytes available:
     uint8_t data[1];
     udp.read(data, 1); // read 1 byte from the buffer
-    ATMEGA_Serial.write(commands[data[0]] | (1 << 7));
+    ATMEGA_Serial.write(data[0] | (1 << 7));
 
     UDP_remoteIP = udp.remoteIP();
     UDP_remotePort = udp.remotePort();
@@ -197,6 +176,34 @@ void sendUDP() {
     udp.beginPacket(UDP_remoteIP, UDP_remotePort);
     udp.write(voltageCode);
     udp.endPacket();
+  }
+}
+
+/*__________________________________________________________SERIAL__________________________________________________________*/
+
+uint8_t serialMessage[2];
+boolean messageDone = false;
+
+void checkSerial() {
+  if (ATMEGA_Serial.available() > 0) {
+    uint8_t data = ATMEGA_Serial.read();
+    DEBUG_Serial.print("Serial data:\t0x");
+    DEBUG_Serial.println(data & ~(1 << 7), HEX);
+    if (data >> 7) {
+      serialMessage[0] = data;
+      uint8_t cmd = data & ~(1 << 7);
+      if ((cmd != SETSPEED) && (cmd != actualSpeed)) { // if it's not a speed message, the packet is only one byte long
+        messageDone = true;
+      }
+    } else {
+      serialMessage[1] = data;
+      messageDone = true;
+    }
+  }
+  if (messageDone) {
+    DEBUG_Serial.printf("Data 1: %02X\tData 2: %02X\r\n", serialMessage[0], serialMessage[1]);
+    handleSerial();
+    messageDone = false;
   }
 }
 
@@ -244,8 +251,8 @@ void drawAll() {
     display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits);                      // Indicate that the wheelchair is navigating on autopilot
   }
 
-  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, realSpeed, 27);  // draw the speedometer (based on the WiFi signal level)
-  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(realSpeed)); // draw the number under the speed gauge
+  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, actualSpeed, 27);  // draw the speedometer (based on the WiFi signal level)
+  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(actualSpeed)); // draw the number under the speed gauge
 
   display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 12, String(speed));
 
@@ -279,6 +286,7 @@ void printStations() {
     prevNumber = WiFi.softAPgetStationNum();
     DEBUG_Serial.print(prevNumber);
     DEBUG_Serial.println(" station(s) connected");
+    
   }
 }
 
@@ -295,8 +303,10 @@ int getQuality() {
 
 void handleSerial() {
   switch (serialMessage[0] & ~(1 << 7)) {
-    case BRAKE:
     case MANUAL:
+      autopilot = false;
+      break;
+    case BRAKE:
       movement = 0;
       break;
     case FORWARD:
@@ -312,7 +322,7 @@ void handleSerial() {
       movement = 2;
       break;
     case CHG_STATION:
-      movement = 5; // auto
+      autopilot = true;
       break;
     case LIGHTS_ON:
       lights = 1;
@@ -326,13 +336,24 @@ void handleSerial() {
     case SETSPEED:
       speed = serialMessage[1];
       break;
-    case REALSPEED:
-      realSpeed = ((uint8_t) serialMessage[1]) / 127.0;
+    case ACTUALSPEED:
+      actualSpeed = ((uint8_t) serialMessage[1]) / 127.0;
+      break;
+    case RESET:
+      restart();
       break;
     default:
       // no default
       break;
   }
+}
 
+boolean restart() {
+  display.clear();
+  display.drawXbm(0, DISPLAY_HEIGHT / 4, reboot_width, reboot_height, reboot_bits);
+  display.display();
+  DEBUG_Serial.println("Restarting ...");
+  DEBUG_Serial.flush();
+  ESP.reset();
 }
 

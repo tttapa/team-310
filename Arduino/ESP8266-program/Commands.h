@@ -86,7 +86,11 @@
 
 // Remote-independent commands
 
-#define SETSPEED 0x01
-#define REALSPEED 0x02
+#define BATVOLTAGE 0x02
+#define SETSPEED 0x03
+#define ACTUALSPEED 0x06
+
+#define RESET 0x7F
+
 
 #endif
