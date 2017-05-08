@@ -11,7 +11,8 @@ const unsigned long speed_timeout = 600;
 const unsigned int darkThreshold = 750;
 
 const float ROT_SPEED_FAC = 0.8;
-const float ROT_FWD = 0.3;
+const float ROT_FWD_SLOW = 0.3;
+const float ROT_FWD_FAST = 1.3;
 
 const size_t nb_speed_levels = 3;
 const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
@@ -204,8 +205,8 @@ class Drive {
 #endif
       digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
       digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_FWD);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_FWD_SLOW);
+      analogWrite(SPEED_R, min(SPEED_LEVELS[_speed]*ROT_FWD_FAST, 255));
     }
     void rgtFwd() {
 #ifdef DEBUG
@@ -213,8 +214,8 @@ class Drive {
 #endif
       digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
       digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_FWD);
+      analogWrite(SPEED_L, min(SPEED_LEVELS[_speed]*ROT_FWD_FAST, 255));
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_FWD_SLOW);
     }
 
     /* _________________________________SPEED_________________________________ */
