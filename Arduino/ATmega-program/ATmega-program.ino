@@ -62,10 +62,10 @@ void loop() {
 #endif
     if (data >> 7) {
       serialMessage[0] = data;
-      if (data != 0b10000001) { // if it's not a speed message, the packet is only one byte long
+      if (data & (1<<7) <= 0x06) { // if it's not a speed message, the packet is only one byte long
         messageDone = true;
       }
-    } else if (serialMessage[0] == 0b10000001) {
+    } else if (serialMessage[0] & (1<<7) <= 0x06) {
       serialMessage[1] = data;
       messageDone = true;
     }

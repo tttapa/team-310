@@ -1,4 +1,4 @@
-#define TEST // gebruik knoppen ipv lijnvolgsensoren
+//#define TEST // gebruik knoppen ipv lijnvolgsensoren
 
 #define GROUND 0
 #define TAPE 1
@@ -8,9 +8,10 @@
 const unsigned long remote_timeout = 200;
 const unsigned long speed_timeout = 600;
 
-const unsigned int darkThreshold = 600;
+const unsigned int darkThreshold = 750;
 
 const float ROT_SPEED_FAC = 0.8;
+const float ROT_FWD = 0.3;
 
 const size_t nb_speed_levels = 3;
 const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
@@ -34,6 +35,7 @@ class Drive {
       pinMode(SPEED_L, OUTPUT);
       pinMode(SPEED_R, OUTPUT);
       pinMode(BUZZER, OUTPUT);
+      pinMode(LINE_LED, OUTPUT);
       digitalWrite(DIRECTION_L, LOW);
       digitalWrite(DIRECTION_R, LOW);
       digitalWrite(SPEED_L, LOW);
@@ -46,6 +48,7 @@ class Drive {
       pinMode(SPEED_L, INPUT);
       pinMode(SPEED_R, INPUT);
       pinMode(BUZZER, INPUT);
+      pinMode(LINE_LED, INPUT);
       digitalWrite(DIRECTION_L, LOW);
       digitalWrite(DIRECTION_R, LOW);
       digitalWrite(SPEED_L, LOW);
@@ -201,7 +204,7 @@ class Drive {
 #endif
       digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
       digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_FWD);
       analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
     }
     void rgtFwd() {
@@ -211,7 +214,7 @@ class Drive {
       digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
       digitalWrite(DIRECTION_R, LOW);
       analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_FWD);
     }
 
     /* _________________________________SPEED_________________________________ */
@@ -295,6 +298,8 @@ class Drive {
     }
 
     void followLine() {
+      //brk();
+      //while(true);
       if (getRightColor() == TAPE && !getLeftColor() == TAPE) {
         rgtFwd();
       } else if (getLeftColor() == TAPE && !getRightColor() == TAPE)  {
@@ -332,7 +337,7 @@ class Drive {
     }
 
     boolean getLeftColor() {
-      if (ambientReflectionDiff(LINE_LEFT) > darkThreshold) {
+      if (ambientReflectionDiff(LINE_LEFT) < darkThreshold) {
         return DARK;
       } else {
         return LIGHT;
@@ -340,7 +345,7 @@ class Drive {
     }
 
     boolean getRightColor() {
-      if (ambientReflectionDiff(LINE_RIGHT) > darkThreshold) {
+      if (ambientReflectionDiff(LINE_RIGHT) < darkThreshold) {
         return DARK;
       } else {
         return LIGHT;
@@ -350,12 +355,18 @@ class Drive {
 #ifdef TEST
       return 1023 - 1023 * digitalRead(pin);
 #else
+      digitalWrite(LINE_LED, LOW);
+      delay(1);
       int amb = analogRead(pin);
       digitalWrite(LINE_LED, HIGH);
       delay(1);
       int refl = analogRead(pin);
-      digitalWrite(LINE_LED, LOW);
-      delay(1);
+//#ifdef DEBUG
+      Serial.print(pin);
+      Serial.print('\t');
+      Serial.println(amb - refl);
+//#endif
+      return amb - refl;
 #endif
     }
 };
