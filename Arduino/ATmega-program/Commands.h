@@ -86,7 +86,18 @@
 
 // Remote-independent commands
 
-#define SETSPEED 0x01
-#define REALSPEED 0x02
+#define WS_FWD 0x6B
+#define WS_BWD 0x6A
+#define WS_LFT 0x5A
+#define WS_RGT 0x5B
+
+#define BATVOLTAGE 0x02
+#define SETSPEED 0x03
+#define PWR_L 0x04
+#define PWR_R 0x05
+#define ACTUALSPEED 0x06
+
+#define RESET 0x7F
+
 
 #endif

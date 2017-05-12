@@ -23,6 +23,8 @@ const uint8_t BUZZER = A3;
 
 #include "IRLib.h"
 #include "Commands.h"
+//#include "Motors.hpp"
+#include "Buzzer.h"
 #include "drive.hpp"
 #include "lights.hpp"
 
@@ -45,6 +47,9 @@ void setup() {
 
   pinMode(SPEED_SENSE, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(SPEED_SENSE), checkSpeed, RISING);
+
+  Serial.write((1 << 7) | RESET);
+  delay(500);
 }
 
 #ifdef WIFI
@@ -58,14 +63,14 @@ void loop() {
     uint8_t data = Serial.read();
 #ifdef DEBUG
     Serial.print("Serial data:\t0x");
-    Serial.println(data & ~(1 << 7), HEX);
+    Serial.println(data, HEX);
 #endif
     if (data >> 7) {
       serialMessage[0] = data;
-      if (data & (1<<7) <= 0x06) { // if it's not a speed message, the packet is only one byte long
+      if ((data & ~(1 << 7)) >= 0x06) { // if the packet is only one byte long
         messageDone = true;
       }
-    } else if (serialMessage[0] & (1<<7) <= 0x06) {
+    } else if (serialMessage[0] & ~(1 << 7) <= 0x06) {
       serialMessage[1] = data;
       messageDone = true;
     }
@@ -95,22 +100,25 @@ void loop() {
   }
   drive.refresh();
   lights.refresh(drive.getSpeed());
+  Buzzer.refresh();
   unsigned long maxSpeed = 0;
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 100; i++) {
     if (speed > maxSpeed) {
       maxSpeed = speed;
     }
   }
 #ifdef DEBUG
-  Serial.println(maxSpeed);
+  //Serial.println(maxSpeed);
 #endif
 }
 
+unsigned long speed_interval = 1;
+unsigned long prev_speedISR_micros = 0;
+
 void checkSpeed() {
-  static unsigned long prev = micros();
-  unsigned long tmp = micros() - prev;
-  if(tmp > 5000){
-    speed = tmp;
+  unsigned long tmp = micros() - prev_speedISR_micros;
+  if (tmp > 5000) {
+    speed_interval = tmp;
   }
-  prev = micros();
+  prev_speedISR_micros = micros();
 }

@@ -1,3 +1,6 @@
+#ifndef DRIVE_HPP
+#define DRIVE_HPP
+
 //#define TEST // gebruik knoppen ipv lijnvolgsensoren
 
 #define GROUND 0
@@ -5,25 +8,33 @@
 #define LIGHT 0
 #define DARK 1
 
-const unsigned long remote_timeout = 200;
+#include "Buzzer.h"
+
+const unsigned long remote_timeout = 115;
 const unsigned long speed_timeout = 600;
 
 const unsigned int darkThreshold = 750;
 
 const float ROT_SPEED_FAC = 0.8;
-const float ROT_FWD_SLOW = 0.3;
-const float ROT_FWD_FAST = 1.3;
+const float ROT_FWD_SLOW = 0.2;
+const float ROT_FWD_FAST = 1.35;
 
 const size_t nb_speed_levels = 3;
+
 const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
+
+const uint8_t LEFT_FWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 245};
+const uint8_t LEFT_BWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
+const uint8_t RIGHT_FWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
+const uint8_t RIGHT_BWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
 
 class Drive {
   private:
     uint8_t _speed, _movement, _prevMovement;
-    unsigned long _lastDriveCmd;
+    bool _lastDriveCmdWS = false;
+    unsigned long _lastDriveCmdTime;
     unsigned long _lastSpdUpCmd;
     unsigned long _lastSpdDwnCmd;
-    unsigned long _biepEnd;
     boolean _auto = false;
     boolean _foundRight = false;
     boolean _foundLeft = false;
@@ -56,7 +67,7 @@ class Drive {
       digitalWrite(SPEED_R, LOW);
       digitalWrite(BUZZER, LOW);
     }
-    void checkIR(uint16_t cmd) {
+    void checkIR(uint16_t cmd, uint8_t val = 0) {
       cmd &= 0xFF;
       switch (cmd) {
         case FORWARD:
@@ -64,8 +75,9 @@ class Drive {
         case LEFT:
         case RIGHT:
         case BRAKE:
-          _lastDriveCmd = millis();
+          _lastDriveCmdTime = millis();
           _movement = cmd;
+          _lastDriveCmdWS = false;
           break;
         case SPEEDUP:
           speedup();
@@ -77,24 +89,45 @@ class Drive {
           _auto = true;
           break;
         case MANUAL:
-          _auto = false;
-          _foundRight = false;
-          _foundLeft = false;
-          _foundLine = false;
+          noAutoPilot();
           break;
+
+        case WS_FWD:
+        case WS_BWD:
+        case WS_LFT:
+        case WS_RGT:
+          _movement = cmd - 0x0A;
+          _lastDriveCmdWS = true;
+          break;
+        case PWR_L:          
+        case PWR_R:
+
+          break;
+
+        
         default:
           break;
       }
     }
     void refresh() {
       if (_auto) {
-        if (_foundLine) {
+        if (reachedChargingStation()) {
+          // _charging = true;
+#ifdef DEBUG
+          Serial.println("Reached charging station");
+#endif
+          Buzzer.biep(200, 200);
+          Buzzer.biep(200, 200);
+          Buzzer.biep(200, 200);
+          Buzzer.biep(600, 200);
+          noAutoPilot();
+        } else if (_foundLine) {
           followLine();
         } else {
           findLine();
         }
       } else {
-        if (millis() > (_lastDriveCmd + remote_timeout)) {
+        if (! _lastDriveCmdWS && millis() > (_lastDriveCmdTime + remote_timeout)) {
           _movement = BRAKE;
         }
       }
@@ -104,8 +137,6 @@ class Drive {
         _prevMovement = _movement;
       }
 
-      if (millis() > _biepEnd)
-        biepOff();
 #ifdef DEBUG
       if (_foundLeft)
         Serial.print("Found Left\t");
@@ -198,6 +229,8 @@ class Drive {
 #endif
       digitalWrite(SPEED_L, 0);
       digitalWrite(SPEED_R, 0);
+      digitalWrite(DIRECTION_L, LOW);
+      digitalWrite(DIRECTION_R, LOW);
     }
     void lftFwd() {
 #ifdef DEBUG
@@ -224,9 +257,9 @@ class Drive {
       if (millis() > (_lastSpdUpCmd + speed_timeout)) {
         if (++_speed >= nb_speed_levels) {
           _speed = nb_speed_levels - 1;
-          biep(100);
+          Buzzer.biep(100, 50);
         } else {
-          biep(10);
+          Buzzer.biep(10, 50);
         }
         _lastSpdUpCmd = millis();
       }
@@ -236,17 +269,17 @@ class Drive {
 #elif defined WIFI
       Serial.write(SETSPEED | (1 << 7));
       Serial.write(_speed & ~(1 << 7));
-      Serial.write(REALSPEED | (1 << 7));
+      Serial.write(ACTUALSPEED | (1 << 7));
       Serial.write(SPEED_LEVELS[_speed] >> 1);
 #endif
     }
     void speeddown() {
       if (millis() > (_lastSpdDwnCmd + speed_timeout)) {
         if (_speed-- == 0) {
-          biep(100);
+          Buzzer.biep(100, 50);
           _speed = 0;
         } else {
-          biep(10);
+          Buzzer.biep(10, 50);
         }
         _lastSpdDwnCmd = millis();
       }
@@ -256,23 +289,9 @@ class Drive {
 #elif defined WIFI
       Serial.write(SETSPEED | (1 << 7));
       Serial.write(_speed & ~(1 << 7));
-      Serial.write(REALSPEED | (1 << 7));
+      Serial.write(ACTUALSPEED | (1 << 7));
       Serial.write(SPEED_LEVELS[_speed] >> 1);
 #endif
-    }
-
-    /* _________________________________BUZZER_________________________________ */
-
-    void biep(unsigned long len) {
-      if (BUZZER != 255) {
-        digitalWrite(BUZZER, HIGH);
-        _biepEnd = millis() + len;
-      }
-    }
-    void biepOff() {
-      if (BUZZER != 255) {
-        digitalWrite(BUZZER, LOW);
-      }
     }
 
     /* _________________________________LINE_FOLLOWER_________________________________ */
@@ -305,33 +324,6 @@ class Drive {
         rgtFwd();
       } else if (getLeftColor() == TAPE && !getRightColor() == TAPE)  {
         lftFwd();
-      } else if (getLeftColor() == TAPE && getRightColor() == TAPE) {
-        // _charging = true;
-        brk();
-        digitalWrite(DIRECTION_L, LOW);
-        digitalWrite(DIRECTION_R, LOW);
-#ifdef DEBUG
-        Serial.println("Reached charging station");
-#endif
-        digitalWrite(BUZZER, HIGH);
-        delay(200);
-        digitalWrite(BUZZER, LOW);
-        delay(200);
-        digitalWrite(BUZZER, HIGH);
-        delay(200);
-        digitalWrite(BUZZER, LOW);
-        delay(200);
-        digitalWrite(BUZZER, HIGH);
-        delay(200);
-        digitalWrite(BUZZER, LOW);
-        delay(200);
-        digitalWrite(BUZZER, HIGH);
-        delay(600);
-        digitalWrite(BUZZER, LOW);
-        _auto = false;
-        _foundRight = false;
-        _foundLeft = false;
-        _foundLine = false;
       } else {
         fwd();
       }
@@ -362,12 +354,27 @@ class Drive {
       digitalWrite(LINE_LED, HIGH);
       delay(1);
       int refl = analogRead(pin);
-//#ifdef DEBUG
+      //#ifdef DEBUG
       Serial.print(pin);
       Serial.print('\t');
       Serial.println(amb - refl);
-//#endif
+      //#endif
       return amb - refl;
 #endif
     }
+
+    boolean reachedChargingStation() {
+      return getLeftColor() == TAPE && getRightColor() == TAPE;
+    }
+
+    void noAutoPilot() {
+      _auto = false;
+      _foundRight = false;
+      _foundLeft = false;
+      _foundLine = false;
+      _movement = BRAKE;
+      brk();
+    }
 };
+
+#endif // DRIVE_HPP

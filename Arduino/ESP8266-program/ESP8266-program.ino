@@ -3,14 +3,14 @@
 
 //#define DEBUG_ESP_PORT Serial1
 
-#define STATION // connect to a WiFi network, as well as creating an access point
+//#define STATION // connect to a WiFi network, as well as creating an access point
 #define DVD // use the DVD setting on the remote
 //#define FLIP // flip the OLED display upside down
 
 #include <ESP8266WiFi.h>
 
 const char *APssid         = "HAL 9310";
-const char *APpassword     = "wifiteam310";
+const char *APpassword     = "pieter2001";
 #ifdef STATION
 #include "WiFiCredentials.h"
 #endif
@@ -31,7 +31,7 @@ const float ResRatio = R2 / (R1 + R2);      // Elektrische netwerken ftw :P
 const float voltageCalib = 1.08;            // Analog input voltage differs from actual voltage
 
 const float minVoltage = 5.0;               // minimum battery voltage
-const float maxVoltage = 6.1;               // voltage of fully charged battery
+const float maxVoltage = 7.5;               // voltage of fully charged battery
 
 const unsigned long remote_timeout = 200;
 
@@ -124,6 +124,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
   switch (type) {
     case WStype_DISCONNECTED:             // if the websocket is disconnected
       DEBUG_Serial.printf("[%u] Disconnected!\r\n", num);
+      ATMEGA_Serial.write(BRAKE + 0x80);
       break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
@@ -148,9 +149,16 @@ void sendWebSocket() {
   float voltage = analogRead(A0) * voltageCalib / ResRatio / 1024.0;                 // measure the voltage of the battery
   voltage = voltage > minVoltage ? voltage - minVoltage : 0.0;                       // convert to a 7-bit number relative to the minimum and maximum voltage
   uint8_t voltageCode = voltage < maxVoltage ? voltage * 127 / maxVoltage : 127;
-  udp.beginPacket(UDP_remoteIP, UDP_remotePort);
-  udp.write(voltageCode);
-  udp.endPacket();
+  //udp.beginPacket(UDP_remoteIP, UDP_remotePort);
+  //udp.write(voltageCode);
+  //udp.endPacket();
+  char voltage_str[9];
+  generateHexStr(BATVOLTAGE, voltageCode, voltage_str);
+  webSocket.broadcastTXT(voltage_str, 9);
+  DEBUG_Serial.write(voltage_str, 9);
+  DEBUG_Serial.println();
+  DEBUG_Serial.printf("%d\t%d\t%d\r\n", voltageCode, int(voltage*1000), analogRead(A0));
+
 }
 
 /*__________________________________________________________UDP__________________________________________________________*/
@@ -350,10 +358,25 @@ void handleSerial() {
 
 boolean restart() {
   display.clear();
-  display.drawXbm(0, DISPLAY_HEIGHT / 4, reboot_width, reboot_height, reboot_bits);
+  display.drawXbm(DISPLAY_WIDTH / 4, 0, reboot_width, reboot_height, reboot_bits);
   display.display();
   DEBUG_Serial.println("Restarting ...");
   DEBUG_Serial.flush();
   ESP.reset();
+}
+
+void generateHexStr(uint8_t cmd, uint8_t data, char * string) { // cmd = 0x7F, data = 0x7F → string = "0xFF 0x7F"
+  string[0] = '0';
+  string[1] = 'x';
+  byte2hex(cmd | (1<<7), &string[2]);
+  string[4] = ' ';
+  string[5] = '0';
+  string[6] = 'x';
+  byte2hex(data, &string[7]);
+}
+
+void byte2hex(uint8_t data, char * string) {
+  string[1] = (data & 0xF) > 9 ? (data & 0xF) - 0xA + 'A' : (data & 0xF) + '0';
+  string[0] = (data >> 4) > 9 ? (data >> 4) - 0xA + 'A' : (data >> 4) + '0';
 }
 

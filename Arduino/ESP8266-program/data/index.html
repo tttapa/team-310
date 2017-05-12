@@ -41,6 +41,10 @@
 
     <script type="text/javascript">
 		var command_names = ["Forward", "Backward", "Left", "Right"];
+        var command_codes = [0x6B, 0x6A, 0x5A, 0x5B];
+        //var command_codes = [0x61, 0x60, 0x50, 0x51];
+        var brake = 0x62;
+        var reconnect_timeout; // TODO 
 		var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
         connection.onopen = function () {
             console.log('Opening WebSocket connection');
@@ -66,17 +70,18 @@
             let btn = document.createElement("DIV");
             btn.onmousedown = function(e) {
                 e.preventDefault();
-                connection.send(i.toString(16));
-                this.timer = setInterval(function() {
-                connection.send(i.toString(16));
-                }, 100);
+                connection.send("0x"+command_codes[i].toString(16));
                 return false;
             };
-            btn.onmouseup = function() {
-                clearInterval(this.timer);
+            btn.onmouseup = function(e) {
+                e.preventDefault();
+                connection.send("0x"+brake.toString(16));
+                return false;
             }
-            btn.onmouseleave = function() {
-                clearInterval(this.timer);
+            btn.onmouseleave = function(e) {
+                e.preventDefault();
+                connection.send("0x"+brake.toString(16));
+                return false;
             }  
 			let text = document.createTextNode(command_names[i]);
 			btn.appendChild(text);
