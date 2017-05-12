@@ -8,6 +8,9 @@
 #define LIGHT 0
 #define DARK 1
 
+#define SPEED_LEVELS 3 // the number of speed level settings
+
+#include "Motors.hpp"
 #include "Buzzer.h"
 
 const unsigned long remote_timeout = 115;
@@ -19,18 +22,14 @@ const float ROT_SPEED_FAC = 0.8;
 const float ROT_FWD_SLOW = 0.2;
 const float ROT_FWD_FAST = 1.35;
 
-const size_t nb_speed_levels = 3;
-
-const uint8_t SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
-
-const uint8_t LEFT_FWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 245};
-const uint8_t LEFT_BWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
-const uint8_t RIGHT_FWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
-const uint8_t RIGHT_BWD_SPEED_LEVELS[nb_speed_levels] = {150, 200, 255};
+const uint8_t LEFT_FWD_SPEED_LEVELS[SPEED_LEVELS] = {150, 200, 245};
+const uint8_t LEFT_BWD_SPEED_LEVELS[SPEED_LEVELS] = {150, 200, 255};
+const uint8_t RIGHT_FWD_SPEED_LEVELS[SPEED_LEVELS] = {150, 200, 255};
+const uint8_t RIGHT_BWD_SPEED_LEVELS[SPEED_LEVELS] = {150, 200, 255};
 
 class Drive {
   private:
-    uint8_t _speed, _movement, _prevMovement;
+    uint8_t _speed = 0, _movement, _prevMovement;
     bool _lastDriveCmdWS = false;
     unsigned long _lastDriveCmdTime;
     unsigned long _lastSpdUpCmd;
@@ -39,33 +38,22 @@ class Drive {
     boolean _foundRight = false;
     boolean _foundLeft = false;
     boolean _foundLine = false;
+    Motor L_Motor;
+    Motor R_Motor;
 
   public:
-    Drive() {
-      pinMode(DIRECTION_L, OUTPUT);
-      pinMode(DIRECTION_R, OUTPUT);
-      pinMode(SPEED_L, OUTPUT);
-      pinMode(SPEED_R, OUTPUT);
-      pinMode(BUZZER, OUTPUT);
+    Drive() :
+      L_Motor(SPEED_L, DIRECTION_L, &LEFT_FWD_SPEED_LEVELS, &LEFT_BWD_SPEED_LEVELS),
+      R_Motor(SPEED_R, DIRECTION_R, &RIGHT_FWD_SPEED_LEVELS, &RIGHT_BWD_SPEED_LEVELS)
+    {
       pinMode(LINE_LED, OUTPUT);
-      digitalWrite(DIRECTION_L, LOW);
-      digitalWrite(DIRECTION_R, LOW);
-      digitalWrite(SPEED_L, LOW);
-      digitalWrite(SPEED_R, LOW);
-      digitalWrite(BUZZER, LOW);
+      L_Motor.setSpeed(_speed);
+      R_Motor.setSpeed(_speed);
     }
     ~Drive() {
-      pinMode(DIRECTION_L, INPUT);
-      pinMode(DIRECTION_R, INPUT);
-      pinMode(SPEED_L, INPUT);
-      pinMode(SPEED_R, INPUT);
-      pinMode(BUZZER, INPUT);
+      delete &L_Motor;
+      delete &R_Motor;
       pinMode(LINE_LED, INPUT);
-      digitalWrite(DIRECTION_L, LOW);
-      digitalWrite(DIRECTION_R, LOW);
-      digitalWrite(SPEED_L, LOW);
-      digitalWrite(SPEED_R, LOW);
-      digitalWrite(BUZZER, LOW);
     }
     void checkIR(uint16_t cmd, uint8_t val = 0) {
       cmd &= 0xFF;
@@ -99,12 +87,45 @@ class Drive {
           _movement = cmd - 0x0A;
           _lastDriveCmdWS = true;
           break;
-        case PWR_L:          
+        case PWR_L:
+          {
+            float speed = min((float)abs(val - 63) / 63, 1.0f);
+#ifdef DEBUG
+            Serial.print("Speed L: \t");
+            Serial.print(speed);
+            Serial.print("raw: \t");
+            Serial.println(val);
+#endif
+            L_Motor.setSpeed(SPEED_LEVELS - 1, speed);
+            if (val > 63)
+              L_Motor.forwards();
+            else if (val < 63)
+              L_Motor.backwards();
+            else
+              L_Motor.stop();
+          }
+          _lastDriveCmdWS = true;
+          break;
         case PWR_R:
-
+          {
+            float speed = min((float)abs(val - 63) / 63, 1.0f);
+#ifdef DEBUG
+            Serial.print("Speed R: \t");
+            Serial.print(speed);
+            Serial.print("raw: \t");
+            Serial.println(val);
+#endif
+            R_Motor.setSpeed(SPEED_LEVELS - 1, speed);
+            if (val > 63)
+              R_Motor.forwards();
+            else if (val < 63)
+              R_Motor.backwards();
+            else
+              R_Motor.stop();
+          }
+          _lastDriveCmdWS = true;
           break;
 
-        
         default:
           break;
       }
@@ -183,43 +204,46 @@ class Drive {
 #elif defined WIFI
       Serial.write(FORWARD | (1 << 7));
 #endif
-      digitalWrite(DIRECTION_L, LOW); // Set the direction of both motors to forward
-      digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
+      L_Motor.setSpeed(_speed);
+      R_Motor.setSpeed(_speed);
+      L_Motor.forwards();
+      R_Motor.forwards();
     }
+
     void bwd() {
 #ifdef DEBUG
       Serial.println("backward");
 #elif defined WIFI
       Serial.write(BACKWARD | (1 << 7));
 #endif
-      digitalWrite(DIRECTION_L, HIGH); // Set the direction of both motors to backward
-      digitalWrite(DIRECTION_R, HIGH);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]);
+      L_Motor.setSpeed(_speed);
+      R_Motor.setSpeed(_speed);
+      L_Motor.backwards();
+      R_Motor.backwards();
     }
+
     void lft() {
 #ifdef DEBUG
       Serial.println("left");
 #elif defined WIFI
       Serial.write(LEFT | (1 << 7));
 #endif
-      digitalWrite(DIRECTION_L, HIGH); // Set the direction of the left motor to backward
-      digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      L_Motor.setSpeed(_speed, ROT_SPEED_FAC);
+      R_Motor.setSpeed(_speed, ROT_SPEED_FAC);
+      L_Motor.backwards();
+      R_Motor.forwards();
     }
+
     void rgt() {
 #ifdef DEBUG
       Serial.println("right");
 #elif defined WIFI
       Serial.write(RIGHT | (1 << 7));
 #endif
-      digitalWrite(DIRECTION_L, LOW); // Set the direction of the right motor to backward
-      digitalWrite(DIRECTION_R, HIGH);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_SPEED_FAC);
+      L_Motor.setSpeed(_speed, ROT_SPEED_FAC);
+      R_Motor.setSpeed(_speed, ROT_SPEED_FAC);
+      L_Motor.forwards();
+      R_Motor.backwards();
     }
     void brk() {
 #ifdef DEBUG
@@ -227,37 +251,36 @@ class Drive {
 #elif defined WIFI
       Serial.write(BRAKE | (1 << 7));
 #endif
-      digitalWrite(SPEED_L, 0);
-      digitalWrite(SPEED_R, 0);
-      digitalWrite(DIRECTION_L, LOW);
-      digitalWrite(DIRECTION_R, LOW);
+      L_Motor.stop();
+      R_Motor.stop();
     }
     void lftFwd() {
 #ifdef DEBUG
       Serial.println("left forward");
 #endif
-      digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
-      digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, SPEED_LEVELS[_speed]*ROT_FWD_SLOW);
-      analogWrite(SPEED_R, min(SPEED_LEVELS[_speed]*ROT_FWD_FAST, 255));
+      L_Motor.setSpeed(_speed, ROT_FWD_SLOW);
+      R_Motor.setSpeed(_speed, ROT_FWD_FAST);
+      L_Motor.forwards();
+      R_Motor.forwards();
     }
+
     void rgtFwd() {
 #ifdef DEBUG
       Serial.println("right forward");
 #endif
-      digitalWrite(DIRECTION_L, LOW); // Set the direction of the both motors to forward
-      digitalWrite(DIRECTION_R, LOW);
-      analogWrite(SPEED_L, min(SPEED_LEVELS[_speed]*ROT_FWD_FAST, 255));
-      analogWrite(SPEED_R, SPEED_LEVELS[_speed]*ROT_FWD_SLOW);
+      R_Motor.setSpeed(_speed, ROT_FWD_SLOW);
+      L_Motor.setSpeed(_speed, ROT_FWD_FAST);
+      L_Motor.forwards();
+      R_Motor.forwards();
     }
 
     /* _________________________________SPEED_________________________________ */
 
     void speedup() {
       if (millis() > (_lastSpdUpCmd + speed_timeout)) {
-        if (++_speed >= nb_speed_levels) {
-          _speed = nb_speed_levels - 1;
-          Buzzer.biep(100, 50);
+        if (++_speed >= SPEED_LEVELS) {
+          _speed = SPEED_LEVELS - 1;
+          Buzzer.biep(120, 50);
         } else {
           Buzzer.biep(10, 50);
         }
@@ -269,8 +292,8 @@ class Drive {
 #elif defined WIFI
       Serial.write(SETSPEED | (1 << 7));
       Serial.write(_speed & ~(1 << 7));
-      Serial.write(ACTUALSPEED | (1 << 7));
-      Serial.write(SPEED_LEVELS[_speed] >> 1);
+      //Serial.write(ACTUALSPEED | (1 << 7));
+      //Serial.write(SPEED_LEVELS[_speed] >> 1);
 #endif
     }
     void speeddown() {
@@ -289,8 +312,8 @@ class Drive {
 #elif defined WIFI
       Serial.write(SETSPEED | (1 << 7));
       Serial.write(_speed & ~(1 << 7));
-      Serial.write(ACTUALSPEED | (1 << 7));
-      Serial.write(SPEED_LEVELS[_speed] >> 1);
+      //Serial.write(ACTUALSPEED | (1 << 7));
+      //Serial.write(SPEED_LEVELS[_speed] >> 1);
 #endif
     }
 

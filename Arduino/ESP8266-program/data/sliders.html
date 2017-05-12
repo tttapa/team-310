@@ -1,0 +1,76 @@
+<html>
+<head>
+    <title>Team 310</title>
+    <link href='main.css' rel='stylesheet' type='text/css'>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="144x144"  href="/favicon-144x144.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00878f">
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+	<style>
+		.controls{
+			background-color: #4CAF50;
+			color: white;
+			padding: 16px;
+			font-size: 16px;
+			border: 1px solid black;
+			cursor: pointer;
+			width: 100px;
+			padding: 10px;
+			margin: 10px 0px;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>	
+	
+	
+</head>
+<body>
+	<article>
+        <header>
+            <h1>Team 310 - P&amp;02</h1>
+        </header>
+        <div>
+            <input type="range" id="L" data-cmd="0x04" value="63", max="127" onmousemove="sendValue(this);">
+            <input type="range" id="R" data-cmd="0x05" value="63", max="127" onmousemove="sendValue(this);">
+        </div>
+	</article>
+
+    <script type="text/javascript">
+        var reconnect_timeout; // TODO 
+		var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+        connection.onopen = function () {
+            console.log('Opening WebSocket connection');
+        };
+        connection.onerror = function (error) {
+            console.log('WebSocket Error ', error);
+            connection.close();
+            setTimeout( function(){
+                connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+            },500);
+        };
+        connection.onmessage = function (e) {  
+            console.log('Server: ', e.data);
+        };
+        connection.onclose = function(){
+            console.log('WebSocket connection closed');
+            setTimeout( function(){
+                connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+            },500);
+        };
+
+        function sendValue(slider) {
+            var val = parseInt(slider.value);
+            console.log(val);
+            console.log(val.toString(16));
+            connection.send(slider.dataset.cmd + " 0x" + (val.toString(16)));
+            console.log(slider.dataset.cmd + " 0x" + (val.toString(16)));
+        }
+    </script>
+</body>
+</html>

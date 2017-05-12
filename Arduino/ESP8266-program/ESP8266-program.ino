@@ -133,12 +133,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
     case WStype_TEXT:                     // if new text data is received
       DEBUG_Serial.printf("[%u] get Text: %s: \t", num, payload);
-      int cmd = strtol((const char *) payload, NULL, 16); // convert from HEX string to number
-      DEBUG_Serial.println(cmd, HEX);
+      uint8_t cmd = strtol((const char *) payload, NULL, 16); // convert from HEX string to number
+      DEBUG_Serial.print(cmd, HEX);
       ATMEGA_Serial.write(cmd | (1 << 7));
-      if (length > 4) { // there's a data byte as well
-        int cmd = strtol((const char *) &payload[5], NULL, 16); // convert from HEX string to number
+      if (length > 5) { // there's a data byte as well
+        uint8_t data = strtol((const char *) &payload[5], NULL, 16); // convert from HEX string to number
+        DEBUG_Serial.print(data, HEX);
+        ATMEGA_Serial.write(data);
       }
+      DEBUG_Serial.println();
 
       break;
   }
@@ -157,7 +160,7 @@ void sendWebSocket() {
   webSocket.broadcastTXT(voltage_str, 9);
   DEBUG_Serial.write(voltage_str, 9);
   DEBUG_Serial.println();
-  DEBUG_Serial.printf("%d\t%d\t%d\r\n", voltageCode, int(voltage*1000), analogRead(A0));
+  DEBUG_Serial.printf("%d\t%d\t%d\r\n", voltageCode, int(voltage * 1000), analogRead(A0));
 
 }
 
@@ -294,7 +297,7 @@ void printStations() {
     prevNumber = WiFi.softAPgetStationNum();
     DEBUG_Serial.print(prevNumber);
     DEBUG_Serial.println(" station(s) connected");
-    
+
   }
 }
 
@@ -368,7 +371,7 @@ boolean restart() {
 void generateHexStr(uint8_t cmd, uint8_t data, char * string) { // cmd = 0x7F, data = 0x7F → string = "0xFF 0x7F"
   string[0] = '0';
   string[1] = 'x';
-  byte2hex(cmd | (1<<7), &string[2]);
+  byte2hex(cmd | (1 << 7), &string[2]);
   string[4] = ' ';
   string[5] = '0';
   string[6] = 'x';

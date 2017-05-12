@@ -1,7 +1,7 @@
 #define DVD // use the DVD setting on the remote
 #define WIFI // use Serial connection to Wi-Fi chip
 
-//#define DEBUG // print commands and other debug messages to the serial port
+#define DEBUG // print commands and other debug messages to the serial port
 
 const uint8_t IR_REMOTE = 2;
 const uint8_t SPEED_SENSE = 3;
@@ -23,7 +23,7 @@ const uint8_t BUZZER = A3;
 
 #include "IRLib.h"
 #include "Commands.h"
-//#include "Motors.hpp"
+#include "Motors.hpp"
 #include "Buzzer.h"
 #include "drive.hpp"
 #include "lights.hpp"
@@ -70,7 +70,7 @@ void loop() {
       if ((data & ~(1 << 7)) >= 0x06) { // if the packet is only one byte long
         messageDone = true;
       }
-    } else if (serialMessage[0] & ~(1 << 7) <= 0x06) {
+    } else if ((serialMessage[0] & ~(1 << 7)) <= 0x06) {
       serialMessage[1] = data;
       messageDone = true;
     }
@@ -81,7 +81,7 @@ void loop() {
 #else
     // Serial.write(serialMessage, 2);
 #endif
-    drive.checkIR(serialMessage[0] & ~(1 << 7));
+    drive.checkIR(serialMessage[0] & ~(1 << 7), serialMessage[1]);
     lights.checkIR(serialMessage[0] & ~(1 << 7));
     messageDone = false;
   }
