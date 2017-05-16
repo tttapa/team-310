@@ -9,7 +9,8 @@ const bool ShiftPWM_balanceLoad = false;
 #include <ShiftPWM.h>
 const unsigned char maxBrightness = 255;
 const unsigned char pwmFrequency = 80;
-const int numRegisters = 3;
+const int numRegisters = 6
+;
 const int numRGBleds = numRegisters * 8 / 3;
 
 const uint8_t RED[] =    {0, 0, 255};

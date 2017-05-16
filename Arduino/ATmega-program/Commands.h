@@ -97,6 +97,9 @@
 #define PWR_R 0x05
 #define ACTUALSPEED 0x06
 
+#define IR_ON 0x6E
+#define IR_OFF 0x6F
+
 #define RESET 0x7F
 
 

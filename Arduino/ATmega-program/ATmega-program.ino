@@ -49,7 +49,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(SPEED_SENSE), checkSpeed, RISING);
 
   Serial.write((1 << 7) | RESET);
-  delay(500);
+  delay(1000);
 }
 
 #ifdef WIFI
@@ -58,34 +58,7 @@ boolean messageDone = false;
 #endif
 
 void loop() {
-#ifdef WIFI
-  if (Serial.available() > 0) {
-    uint8_t data = Serial.read();
-#ifdef DEBUG
-    Serial.print("Serial data:\t0x");
-    Serial.println(data, HEX);
-#endif
-    if (data >> 7) {
-      serialMessage[0] = data;
-      if ((data & ~(1 << 7)) >= 0x06) { // if the packet is only one byte long
-        messageDone = true;
-      }
-    } else if ((serialMessage[0] & ~(1 << 7)) <= 0x06) {
-      serialMessage[1] = data;
-      messageDone = true;
-    }
-  }
-  if (messageDone) {
-#ifdef DEBUG
-    Serial.println("Message is being processed");
-#else
-    // Serial.write(serialMessage, 2);
-#endif
-    drive.checkIR(serialMessage[0] & ~(1 << 7), serialMessage[1]);
-    lights.checkIR(serialMessage[0] & ~(1 << 7));
-    messageDone = false;
-  }
-#endif
+  checkSerial();
   if (My_Receiver.GetResults(&My_Decoder)) {
     My_Receiver.resume();
     My_Decoder.decode();
@@ -122,3 +95,35 @@ void checkSpeed() {
   }
   prev_speedISR_micros = micros();
 }
+
+void checkSerial() {
+#ifdef WIFI
+  if (Serial.available() > 0) {
+    uint8_t data = Serial.read();
+#ifdef DEBUG
+    Serial.print("Serial data:\t0x");
+    Serial.println(data, HEX);
+#endif
+    if (data >> 7) {
+      serialMessage[0] = data;
+      if ((data & ~(1 << 7)) >= 0x06) { // if the packet is only one byte long
+        messageDone = true;
+      }
+    } else if ((serialMessage[0] & ~(1 << 7)) <= 0x06) {
+      serialMessage[1] = data;
+      messageDone = true;
+    }
+  }
+  if (messageDone) {
+#ifdef DEBUG
+    Serial.println("Message is being processed");
+#else
+    // Serial.write(serialMessage, 2);
+#endif
+    drive.checkIR(serialMessage[0] & ~(1 << 7), serialMessage[1]);
+    lights.checkIR(serialMessage[0] & ~(1 << 7));
+    messageDone = false;
+  }
+#endif
+}
+

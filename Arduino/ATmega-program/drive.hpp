@@ -69,9 +69,15 @@ class Drive {
           break;
         case SPEEDUP:
           speedup();
+          sendSpeed();
           break;
         case SPEEDDOWN:
           speeddown();
+          sendSpeed();
+          break;
+        case SETSPEED:
+          _speed = val % SPEED_LEVELS;
+          sendSpeed();
           break;
         case CHG_STATION:
           _auto = true;
@@ -286,15 +292,6 @@ class Drive {
         }
         _lastSpdUpCmd = millis();
       }
-#ifdef DEBUG
-      Serial.print("Speed:\t");
-      Serial.println(_speed);
-#elif defined WIFI
-      Serial.write(SETSPEED | (1 << 7));
-      Serial.write(_speed & ~(1 << 7));
-      //Serial.write(ACTUALSPEED | (1 << 7));
-      //Serial.write(SPEED_LEVELS[_speed] >> 1);
-#endif
     }
     void speeddown() {
       if (millis() > (_lastSpdDwnCmd + speed_timeout)) {
@@ -306,10 +303,14 @@ class Drive {
         }
         _lastSpdDwnCmd = millis();
       }
+    }
+
+    void sendSpeed() {
 #ifdef DEBUG
       Serial.print("Speed:\t");
       Serial.println(_speed);
-#elif defined WIFI
+#endif
+#if defined WIFI
       Serial.write(SETSPEED | (1 << 7));
       Serial.write(_speed & ~(1 << 7));
       //Serial.write(ACTUALSPEED | (1 << 7));

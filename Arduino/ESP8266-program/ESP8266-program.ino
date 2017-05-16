@@ -33,8 +33,6 @@ const float voltageCalib = 1.08;            // Analog input voltage differs from
 const float minVoltage = 5.0;               // minimum battery voltage
 const float maxVoltage = 7.5;               // voltage of fully charged battery
 
-const unsigned long remote_timeout = 200;
-
 #include <WebSocketsServer.h>
 
 // function prototype
@@ -129,6 +127,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
         DEBUG_Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        sendWebSocket();
       }
       break;
     case WStype_TEXT:                     // if new text data is received
@@ -155,13 +154,18 @@ void sendWebSocket() {
   //udp.beginPacket(UDP_remoteIP, UDP_remotePort);
   //udp.write(voltageCode);
   //udp.endPacket();
-  char voltage_str[9];
+  
+  char voltage_str[10];
   generateHexStr(BATVOLTAGE, voltageCode, voltage_str);
   webSocket.broadcastTXT(voltage_str, 9);
   DEBUG_Serial.write(voltage_str, 9);
   DEBUG_Serial.println();
   DEBUG_Serial.printf("%d\t%d\t%d\r\n", voltageCode, int(voltage * 1000), analogRead(A0));
-
+  
+  char speed_str[10];
+  generateHexStr(SETSPEED, speed, speed_str);
+  webSocket.broadcastTXT(speed_str, 9);
+  DEBUG_Serial.printf("Speed: %d\t%s\r\n", speed, speed_str);
 }
 
 /*__________________________________________________________UDP__________________________________________________________*/
@@ -203,10 +207,10 @@ void checkSerial() {
     if (data >> 7) {
       serialMessage[0] = data;
       uint8_t cmd = data & ~(1 << 7);
-      if ((cmd != SETSPEED) && (cmd != actualSpeed)) { // if it's not a speed message, the packet is only one byte long
+      if ((data & ~(1 << 7)) >= 0x06) { // if the packet is only one byte long
         messageDone = true;
       }
-    } else {
+    } else if ((serialMessage[0] & ~(1 << 7)) <= 0x06) {
       serialMessage[1] = data;
       messageDone = true;
     }
@@ -376,6 +380,7 @@ void generateHexStr(uint8_t cmd, uint8_t data, char * string) { // cmd = 0x7F, d
   string[5] = '0';
   string[6] = 'x';
   byte2hex(data, &string[7]);
+  string[9] = '\0';
 }
 
 void byte2hex(uint8_t data, char * string) {
