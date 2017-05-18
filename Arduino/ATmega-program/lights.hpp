@@ -1,3 +1,6 @@
+#ifndef LIGHTS_HPP
+#define LIGHTS_HPP
+
 // ShiftPWM settings
 //#define SHIFTPWM_USE_TIMER3
 const int ShiftPWM_latchPin = LATCH;
@@ -9,17 +12,16 @@ const bool ShiftPWM_balanceLoad = false;
 #include <ShiftPWM.h>
 const unsigned char maxBrightness = 255;
 const unsigned char pwmFrequency = 80;
-const int numRegisters = 6
-;
+const int numRegisters = 3;
 const int numRGBleds = numRegisters * 8 / 3;
 
-const uint8_t RED[] =    {0, 0, 255};
-const uint8_t GREEN[] =  {0, 190, 0};
-const uint8_t BLUE[] =   {200, 0, 0};
-const uint8_t YELLOW[] = {0, 127, 255};
+const uint8_t RED[] =    {255, 0, 0};
+const uint8_t GREEN[] =  {0, 255, 0};
+const uint8_t BLUE[] =   {0, 0, 255};
+const uint8_t YELLOW[] = {255, 127, 0};
 const uint8_t PURPLE[] = {200, 0, 255};
 const uint8_t CYAN[] =   {200, 190, 0};
-const uint8_t WHITE[] =  {200, 190, 255};
+const uint8_t WHITE[] =  {255, 190, 200};
 const uint8_t BLACK[] =  {0, 0, 0};
 
 //prototypes
@@ -51,7 +53,8 @@ class Lights {
         case LIGHTS_ON:
 #ifdef DEBUG
           Serial.println("Lights on");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_ON | (1 << 7));
 #endif
           digitalWrite(LIGHTS, 1);
@@ -62,7 +65,8 @@ class Lights {
         case LIGHTS_OFF:
 #ifdef DEBUG
           Serial.println("Lights off");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_OFF | (1 << 7));
 #endif
           digitalWrite(LIGHTS, 0);
@@ -73,7 +77,8 @@ class Lights {
         case LIGHTS_RED:
 #ifdef DEBUG
           Serial.println("Lights red");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_RED | (1 << 7));
 #endif
           _color = RED;
@@ -83,7 +88,8 @@ class Lights {
         case LIGHTS_GREEN:
 #ifdef DEBUG
           Serial.println("Lights green");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_GREEN | (1 << 7));
 #endif
           _color = GREEN;
@@ -93,7 +99,8 @@ class Lights {
         case LIGHTS_YELLOW:
 #ifdef DEBUG
           Serial.println("Lights yellow");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_YELLOW | (1 << 7));
 #endif
           _color = YELLOW;
@@ -103,7 +110,8 @@ class Lights {
         case LIGHTS_BLUE:
 #ifdef DEBUG
           Serial.println("Lights blue");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_BLUE | (1 << 7));
 #endif
           _color = BLUE;
@@ -113,7 +121,8 @@ class Lights {
         case LIGHTS_RAINBOW:
 #ifdef DEBUG
           Serial.println("Lights rainbow");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_RAINBOW | (1 << 7));
 #endif
           _rainbow = true;
@@ -125,7 +134,8 @@ class Lights {
             _color = WHITE;
 #ifdef DEBUG
           Serial.println("Lights automatic");
-#elif defined WIFI
+#endif
+#ifdef WIFI
           Serial.write(LIGHTS_AUTO | (1 << 7));
 #endif
           break;
@@ -185,3 +195,6 @@ void printHex(uint8_t val) {
 #endif
 }
 
+Lights lights;
+
+#endif // LIGHTS_HPP

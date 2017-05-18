@@ -1,6 +1,7 @@
 #ifndef DRIVE_HPP
 #define DRIVE_HPP
 
+#include "lights.hpp"
 //#define TEST // gebruik knoppen ipv lijnvolgsensoren
 
 #define GROUND 0
@@ -81,6 +82,15 @@ class Drive {
           break;
         case CHG_STATION:
           _auto = true;
+#ifdef WIFI
+          Serial.write(cmd | (1 << 7));
+#endif
+          break;
+        case PREV:
+        case NEXT:
+#ifdef WIFI
+          Serial.write(cmd | (1 << 7));
+#endif
           break;
         case MANUAL:
           noAutoPilot();
@@ -147,6 +157,7 @@ class Drive {
           Buzzer.biep(200, 200);
           Buzzer.biep(200, 200);
           Buzzer.biep(600, 200);
+          lights.checkIR(LIGHTS_OFF);
           noAutoPilot();
         } else if (_foundLine) {
           followLine();
@@ -207,7 +218,8 @@ class Drive {
     void fwd() {
 #ifdef DEBUG
       Serial.println("forward");
-#elif defined WIFI
+#endif
+#ifdef WIFI
       Serial.write(FORWARD | (1 << 7));
 #endif
       L_Motor.setSpeed(_speed);
@@ -219,7 +231,8 @@ class Drive {
     void bwd() {
 #ifdef DEBUG
       Serial.println("backward");
-#elif defined WIFI
+#endif
+#ifdef WIFI
       Serial.write(BACKWARD | (1 << 7));
 #endif
       L_Motor.setSpeed(_speed);
@@ -231,7 +244,8 @@ class Drive {
     void lft() {
 #ifdef DEBUG
       Serial.println("left");
-#elif defined WIFI
+#endif
+#ifdef WIFI
       Serial.write(LEFT | (1 << 7));
 #endif
       L_Motor.setSpeed(_speed, ROT_SPEED_FAC);
@@ -243,7 +257,8 @@ class Drive {
     void rgt() {
 #ifdef DEBUG
       Serial.println("right");
-#elif defined WIFI
+#endif
+#ifdef WIFI
       Serial.write(RIGHT | (1 << 7));
 #endif
       L_Motor.setSpeed(_speed, ROT_SPEED_FAC);
@@ -254,7 +269,8 @@ class Drive {
     void brk() {
 #ifdef DEBUG
       Serial.println("brake");
-#elif defined WIFI
+#endif
+#ifdef WIFI
       Serial.write(BRAKE | (1 << 7));
 #endif
       L_Motor.stop();
@@ -378,11 +394,11 @@ class Drive {
       digitalWrite(LINE_LED, HIGH);
       delay(1);
       int refl = analogRead(pin);
-      //#ifdef DEBUG
+#ifdef DEBUG
       Serial.print(pin);
       Serial.print('\t');
       Serial.println(amb - refl);
-      //#endif
+#endif
       return amb - refl;
 #endif
     }
@@ -396,9 +412,14 @@ class Drive {
       _foundRight = false;
       _foundLeft = false;
       _foundLine = false;
-      _movement = BRAKE;
       brk();
+      _movement = BRAKE;
+#ifdef WIFI
+      Serial.write(MANUAL | (1 << 7));
+#endif
     }
 };
+
+Drive drive;
 
 #endif // DRIVE_HPP

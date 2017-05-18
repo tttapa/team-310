@@ -1,7 +1,8 @@
 #define DVD // use the DVD setting on the remote
 #define WIFI // use Serial connection to Wi-Fi chip
 
-#define DEBUG // print commands and other debug messages to the serial port
+//#define DEBUG // print commands and other debug messages to the serial port
+//#define DEBUG_SPD
 
 const uint8_t IR_REMOTE = 2;
 const uint8_t SPEED_SENSE = 3;
@@ -28,15 +29,15 @@ const uint8_t BUZZER = A3;
 #include "drive.hpp"
 #include "lights.hpp"
 
-Drive drive;
-Lights lights;
-
 IRrecv My_Receiver(IR_REMOTE);
 
 IRdecode My_Decoder;
 unsigned int Buffer[RAWBUF];
 
+volatile unsigned long prev = micros();
 volatile unsigned long speed = 0;
+unsigned long prevspeed = -1;
+bool sentZeroSpeed = false;
 
 void setup() {
   Serial.begin(115200);
@@ -74,26 +75,42 @@ void loop() {
   drive.refresh();
   lights.refresh(drive.getSpeed());
   Buzzer.refresh();
-  unsigned long maxSpeed = 0;
-  for (int i = 0; i < 100; i++) {
-    if (speed > maxSpeed) {
-      maxSpeed = speed;
-    }
-  }
-#ifdef DEBUG
-  //Serial.println(maxSpeed);
+
+
+  if (speed != prevspeed) {
+    sentZeroSpeed = false;
+    int actualspeed = runningAverage(speed > 0 ? 1000000.0 / speed : 0);
+#ifdef DEBUG_SPD
+    Serial.print("Speed:\t");
+    Serial.println((actualspeed * 127 / 160) & (~(1 << 7)));
 #endif
+#ifdef WIFI
+    Serial.write(ACTUALSPEED | (1 << 7));
+    Serial.write((actualspeed * 127 / 160) & (~(1 << 7)));
+#endif
+    prevspeed = speed;
+  }
+  if (micros() > prev + 60000 && !sentZeroSpeed) {
+    sentZeroSpeed = true;
+#ifdef DEBUG_SPD
+    Serial.print("Speed:\t");
+    Serial.println(0);
+#endif
+#ifdef WIFI
+    Serial.write(ACTUALSPEED | (1 << 7));
+    Serial.write(0);
+#endif
+  }
 }
 
 unsigned long speed_interval = 1;
 unsigned long prev_speedISR_micros = 0;
 
 void checkSpeed() {
-  unsigned long tmp = micros() - prev_speedISR_micros;
-  if (tmp > 5000) {
-    speed_interval = tmp;
-  }
-  prev_speedISR_micros = micros();
+  unsigned long tmp = micros() - prev;
+  if (tmp > 6000)
+    speed = tmp;
+  prev = micros();
 }
 
 void checkSerial() {
@@ -127,3 +144,20 @@ void checkSerial() {
 #endif
 }
 
+long runningAverage(int M) {
+  #define LM_SIZE 8
+  static int LM[LM_SIZE];      // LastMeasurements
+  static byte index = 0;
+  static long sum = 0;
+  static byte count = 0;
+
+  // keep sum updated to improve speed.
+  sum -= LM[index];
+  LM[index] = M;
+  sum += LM[index];
+  index++;
+  index = index % LM_SIZE;
+  if (count < LM_SIZE) count++;
+
+  return sum / count;
+}

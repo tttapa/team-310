@@ -33,6 +33,8 @@ const float voltageCalib = 1.08;            // Analog input voltage differs from
 const float minVoltage = 5.0;               // minimum battery voltage
 const float maxVoltage = 7.5;               // voltage of fully charged battery
 
+const float wheelRadius = 3.4;
+
 #include <WebSocketsServer.h>
 
 // function prototype
@@ -73,6 +75,8 @@ void setup() {
   startServer();               // Start a HTTP server with a file read handler and an upload handler
 
   startUDP();                  // Start listening for UDP packets
+
+  startStepper();
 }
 
 /*__________________________________________________________LOOP__________________________________________________________*/
@@ -89,6 +93,14 @@ unsigned long nextRefresh = millis();
 int lights = 2;
 int movement = 0;
 int speed = 0;
+
+const int stepperPin = 12;
+
+int stepperMovement = 0;
+const int stepperDelay = 9;
+
+unsigned long nextStepperStep = 0;
+
 float actualSpeed = 0;
 boolean autopilot = false;
 
@@ -99,14 +111,22 @@ void loop() {
   dnsServer.processNextRequest();             // process DNS requests
   checkSerial();                              // Check if Serial data from the ATmega has arrived
 
-  if (millis() > nextRefresh) {
+  unsigned long now = millis();
+
+  if (now > nextRefresh) {
     drawAll();
+    nextRefresh = now + refresh;
   }
 
-  if (millis() > nextUDP) {
+  if (now > nextUDP) {
     sendUDP();
     sendWebSocket();
-    nextUDP = millis() + UDP_interval;
+    nextUDP = now + UDP_interval;
+  }
+
+  if (now > nextStepperStep) {
+    stepperMove();
+    nextStepperStep = now + stepperDelay;
   }
 
   checkUDP();
@@ -154,18 +174,18 @@ void sendWebSocket() {
   //udp.beginPacket(UDP_remoteIP, UDP_remotePort);
   //udp.write(voltageCode);
   //udp.endPacket();
-  
+
   char voltage_str[10];
   generateHexStr(BATVOLTAGE, voltageCode, voltage_str);
   webSocket.broadcastTXT(voltage_str, 9);
-  DEBUG_Serial.write(voltage_str, 9);
-  DEBUG_Serial.println();
-  DEBUG_Serial.printf("%d\t%d\t%d\r\n", voltageCode, int(voltage * 1000), analogRead(A0));
-  
+  //DEBUG_Serial.write(voltage_str, 9);
+  //DEBUG_Serial.println();
+  //DEBUG_Serial.printf("%d\t%d\t%d\r\n", voltageCode, int(voltage * 1000), analogRead(A0));
+
   char speed_str[10];
   generateHexStr(SETSPEED, speed, speed_str);
   webSocket.broadcastTXT(speed_str, 9);
-  DEBUG_Serial.printf("Speed: %d\t%s\r\n", speed, speed_str);
+  //DEBUG_Serial.printf("Speed: %d\t%s\r\n", speed, speed_str);
 }
 
 /*__________________________________________________________UDP__________________________________________________________*/
@@ -197,29 +217,33 @@ void sendUDP() {
 /*__________________________________________________________SERIAL__________________________________________________________*/
 
 uint8_t serialMessage[2];
-boolean messageDone = false;
+//boolean messageDone = false;
 
 void checkSerial() {
   if (ATMEGA_Serial.available() > 0) {
     uint8_t data = ATMEGA_Serial.read();
-    DEBUG_Serial.print("Serial data:\t0x");
-    DEBUG_Serial.println(data & ~(1 << 7), HEX);
+    DEBUG_Serial.print("\t\t\tSerial data:\t0x");
+    DEBUG_Serial.println(data, HEX);
     if (data >> 7) {
       serialMessage[0] = data;
-      uint8_t cmd = data & ~(1 << 7);
-      if ((data & ~(1 << 7)) >= 0x06) { // if the packet is only one byte long
-        messageDone = true;
+      uint8_t cmd = data & (~(1 << 7));
+      if (cmd > 0x06) { // if the packet is only one byte long
+        //messageDone = true;
+        DEBUG_Serial.printf("Data 1: %02X\r\n", serialMessage[0]);
+        handleSerial();
       }
     } else if ((serialMessage[0] & ~(1 << 7)) <= 0x06) {
       serialMessage[1] = data;
-      messageDone = true;
+      DEBUG_Serial.printf("Data 1: %02X\tData 2: %02X\r\n", serialMessage[0], serialMessage[1]);
+      handleSerial();
+      //messageDone = true;
     }
   }
-  if (messageDone) {
-    DEBUG_Serial.printf("Data 1: %02X\tData 2: %02X\r\n", serialMessage[0], serialMessage[1]);
-    handleSerial();
-    messageDone = false;
-  }
+  //if (messageDone) {
+  //  DEBUG_Serial.printf("Data 1: %02X\tData 2: %02X\r\n", serialMessage[0], serialMessage[1]);
+  //  handleSerial();
+  //  messageDone = false;
+  //}
 }
 
 /*__________________________________________________________DISPLAY__________________________________________________________*/
@@ -231,7 +255,7 @@ unsigned long frameTime = 250;
 void drawAll() {
   display.clear(); // clear the frame buffer
 
-  display.drawString(DISPLAY_WIDTH / 2, 0, "HAL 9310");                              // Print "HAL 9310" in the center of the top bar
+  display.drawString(DISPLAY_WIDTH / 2, 0, "Team 310");                              // Print "HAL 9310" in the center of the top bar
 
   float voltage = analogRead(A0) * voltageCalib / ResRatio / 1024.0;                 // measure the voltage of the battery
   int batLevel = round(3.0 * (voltage - minVoltage) / (maxVoltage - minVoltage));    // convert voltage to battery level
@@ -257,22 +281,22 @@ void drawAll() {
     display.drawXbm(20, 1, 9, 9, sun_bits);                                            // show a sun symbol in the top bar
   else                                                                               // if the lights are in automatic mode
     display.drawString(20 + 4, 0, "A");                                                // show the letter A in the top bar
-
-  if (movement == 0) {
-    display.drawString(DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 10, "BRAKE");
-  } else if (movement <= 4) {
-    drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement - 1);          // show an arrow indicating the direction of the movement
+  if (!autopilot) {
+    if (movement == 0) {
+      display.drawString(DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 10, "BRAKE");
+    } else if (movement <= 4) {
+      drawArrow(1 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 8, movement - 1);          // show an arrow indicating the direction of the movement
+    }
   } else {
     display.drawXbm(0, 13, Auto_width, Auto_height, Auto_bits);                      // Indicate that the wheelchair is navigating on autopilot
   }
 
-  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, actualSpeed, 27);  // draw the speedometer (based on the WiFi signal level)
-  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(actualSpeed)); // draw the number under the speed gauge
+  drawMeter(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT / 2 + 12, actualSpeed / 160, 27);  // draw the speedometer (based on the WiFi signal level)
+  display.drawString(3 * DISPLAY_WIDTH / 4, DISPLAY_HEIGHT - 12, String(actualSpeed * wheelRadius * 2 * 314 / 6000)); // draw the number under the speed gauge
 
   display.drawString(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 12, String(speed));
 
   display.display(); // send the frame buffer to the display
-  nextRefresh = millis() + refresh;
 }
 
 /*__________________________________________________________MISC__________________________________________________________*/
@@ -320,9 +344,12 @@ void handleSerial() {
   switch (serialMessage[0] & ~(1 << 7)) {
     case MANUAL:
       autopilot = false;
+      movement = 0;
+      stepperMovement = 0;
       break;
     case BRAKE:
       movement = 0;
+      stepperMovement = 0;
       break;
     case FORWARD:
       movement = 1;
@@ -352,7 +379,13 @@ void handleSerial() {
       speed = serialMessage[1];
       break;
     case ACTUALSPEED:
-      actualSpeed = ((uint8_t) serialMessage[1]) / 127.0;
+      actualSpeed = ((uint8_t) serialMessage[1]) / 127.0 * 160;
+      break;
+    case PREV:
+      stepperMovement = -1;
+      break;
+    case NEXT:
+      stepperMovement = 1;
       break;
     case RESET:
       restart();
@@ -361,6 +394,7 @@ void handleSerial() {
       // no default
       break;
   }
+  sendWebSocket();
 }
 
 boolean restart() {
@@ -386,5 +420,35 @@ void generateHexStr(uint8_t cmd, uint8_t data, char * string) { // cmd = 0x7F, d
 void byte2hex(uint8_t data, char * string) {
   string[1] = (data & 0xF) > 9 ? (data & 0xF) - 0xA + 'A' : (data & 0xF) + '0';
   string[0] = (data >> 4) > 9 ? (data >> 4) - 0xA + 'A' : (data >> 4) + '0';
+}
+
+void startStepper() {
+  pinMode(stepperPin, OUTPUT);
+  pinMode(stepperPin + 1, OUTPUT);
+  pinMode(stepperPin + 2, OUTPUT);
+  pinMode(stepperPin + 3, OUTPUT);
+}
+
+void stepperMove() {
+  static int i = 0;
+
+  if (stepperMovement == 0)
+    return;
+  if (stepperMovement == 1) {
+    i = (i + 1) % 4;
+    digitalWrite(i + stepperPin, 1);
+    digitalWrite(mod(i - 2, 4) + stepperPin, 0);
+
+  } else { // stepperMovement == -1
+    i = mod(i - 1, 4);
+    digitalWrite(i + stepperPin, 1);
+    digitalWrite((i + 2) % 4 + stepperPin, 0);
+  }
+}
+
+int mod(int a, int b) {
+  if (a > 0)
+    return a % b;
+  return ((a % b) + b) % b;
 }
 
