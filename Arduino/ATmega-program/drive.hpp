@@ -338,21 +338,21 @@ class Drive {
 
     void findLine() {
       _speed = 0;
-      if (_foundRight) {
-        rgt();
-        if (getRightColor() == GROUND) {
+      if (_foundLeft) {
+        lft();
+        if (getLeftColor() == GROUND) {
           fwd();
           _foundLine = true;
         }
-      } else if (_foundLeft) {
-        lft();
-        if (getRightColor() == TAPE) {
-          _foundRight = true;
-        }
-      } else {
-        lft();
+      } else if (_foundRight) {
+        rgt();
         if (getLeftColor() == TAPE) {
           _foundLeft = true;
+        }
+      } else {
+        rgt();
+        if (getRightColor() == TAPE) {
+          _foundRight = true;
         }
       }
     }
